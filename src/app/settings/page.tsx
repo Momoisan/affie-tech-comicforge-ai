@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { CheckCircle2, Cpu, Database, ShieldCheck } from 'lucide-react';
 import { useComicForge } from '@/components/providers/comicforge-provider';
 import {
@@ -146,6 +147,16 @@ export default function SettingsPage() {
             <div className="flex items-center gap-1.5 text-[var(--cf-muted)]">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>Schema & RLS migration ready in supabase/migrations/</span>
+            </div>
+            <div className="pt-1">
+              <Link
+                href="/auth"
+                className="inline-flex items-center text-xs font-semibold text-[#00D9FF] hover:underline"
+              >
+                {preferences.uiLanguage === 'ms-MY'
+                  ? 'Urus Akaun & Log Masuk Supabase →'
+                  : 'Manage Account & Supabase Auth →'}
+              </Link>
             </div>
           </div>
         </div>
