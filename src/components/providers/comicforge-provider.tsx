@@ -11,7 +11,9 @@ import type {
   CharacterProfile,
   ComicProject,
   EngineStatusSummary,
+  PromptPackage,
   SavedPrompt,
+  StoryWorld,
   UserPreferences,
 } from '@/types/comicforge';
 import { TRANSLATIONS, type Translations } from '@/lib/i18n/translations';
@@ -22,6 +24,8 @@ const STORAGE_KEYS = {
   characters: 'comicforge_v1_characters',
   prompts: 'comicforge_v1_prompts',
   preferences: 'comicforge_v1_preferences',
+  worlds: 'comicforge_v2_worlds',
+  packages: 'comicforge_v2_packages',
 } as const;
 
 const DEFAULT_PREFERENCES: UserPreferences = {
@@ -70,6 +74,16 @@ interface ComicForgeContextValue {
   // Prompts CRUD
   savePrompt: (prompt: SavedPrompt) => void;
   deletePrompt: (id: string) => void;
+
+  // V2 Story Bible Worlds
+  worlds: StoryWorld[];
+  saveWorld: (world: StoryWorld) => void;
+  deleteWorld: (id: string) => void;
+
+  // V2 Prompt Packages
+  promptPackages: PromptPackage[];
+  savePromptPackage: (pkg: PromptPackage) => void;
+  deletePromptPackage: (id: string) => void;
 }
 
 const ComicForgeContext = createContext<ComicForgeContextValue | null>(null);
@@ -89,6 +103,8 @@ export function ComicForgeProvider({ children }: { children: React.ReactNode }) 
   const [projects, setProjects] = useState<ComicProject[]>([]);
   const [characters, setCharacters] = useState<CharacterProfile[]>([]);
   const [prompts, setPrompts] = useState<SavedPrompt[]>([]);
+  const [worlds, setWorlds] = useState<StoryWorld[]>([]);
+  const [promptPackages, setPromptPackages] = useState<PromptPackage[]>([]);
   const [preferences, setPreferences] = useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [engineStatus, setEngineStatus] = useState<EngineStatusSummary | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -98,6 +114,8 @@ export function ComicForgeProvider({ children }: { children: React.ReactNode }) 
     setProjects(safeReadStorage<ComicProject[]>(STORAGE_KEYS.projects, []));
     setCharacters(safeReadStorage<CharacterProfile[]>(STORAGE_KEYS.characters, []));
     setPrompts(safeReadStorage<SavedPrompt[]>(STORAGE_KEYS.prompts, []));
+    setWorlds(safeReadStorage<StoryWorld[]>(STORAGE_KEYS.worlds, []));
+    setPromptPackages(safeReadStorage<PromptPackage[]>(STORAGE_KEYS.packages, []));
     setPreferences({
       ...DEFAULT_PREFERENCES,
       ...safeReadStorage<Partial<UserPreferences>>(STORAGE_KEYS.preferences, {}),
@@ -287,6 +305,48 @@ export function ComicForgeProvider({ children }: { children: React.ReactNode }) 
     });
   }, []);
 
+  const saveWorld = useCallback((world: StoryWorld) => {
+    setWorlds((prev) => {
+      const idx = prev.findIndex((w) => w.id === world.id);
+      const updated = { ...world, updatedAt: new Date().toISOString() };
+      const next = idx >= 0 ? prev.map((w) => (w.id === world.id ? updated : w)) : [updated, ...prev];
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STORAGE_KEYS.worlds, JSON.stringify(next));
+      }
+      return next;
+    });
+  }, []);
+
+  const deleteWorld = useCallback((id: string) => {
+    setWorlds((prev) => {
+      const next = prev.filter((w) => w.id !== id);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STORAGE_KEYS.worlds, JSON.stringify(next));
+      }
+      return next;
+    });
+  }, []);
+
+  const savePromptPackage = useCallback((pkg: PromptPackage) => {
+    setPromptPackages((prev) => {
+      const next = [pkg, ...prev.filter((p) => p.id !== pkg.id)].slice(0, 200);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STORAGE_KEYS.packages, JSON.stringify(next));
+      }
+      return next;
+    });
+  }, []);
+
+  const deletePromptPackage = useCallback((id: string) => {
+    setPromptPackages((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(STORAGE_KEYS.packages, JSON.stringify(next));
+      }
+      return next;
+    });
+  }, []);
+
   const t = TRANSLATIONS[preferences.uiLanguage] ?? TRANSLATIONS['ms-MY'];
 
   return (
@@ -313,6 +373,12 @@ export function ComicForgeProvider({ children }: { children: React.ReactNode }) 
         deleteCharacter,
         savePrompt,
         deletePrompt,
+        worlds,
+        saveWorld,
+        deleteWorld,
+        promptPackages,
+        savePromptPackage,
+        deletePromptPackage,
       }}
     >
       {children}

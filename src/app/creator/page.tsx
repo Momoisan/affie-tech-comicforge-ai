@@ -28,6 +28,9 @@ import {
   ART_STYLE_IDS,
   ASPECT_RATIOS,
   COMIC_GENRES,
+  MALAYSIAN_CULTURAL_CONTEXTS,
+  MALAYSIAN_DIALOGUE_STYLES,
+  MALAYSIAN_REGIONAL_PRESETS,
   PUBLISHING_FORMATS,
   STORY_LANGUAGES,
   STORY_TONES,
@@ -83,6 +86,7 @@ function ComicCreatorInner() {
     t,
     projects,
     characters,
+    worlds,
     preferences,
     saveProject,
     savePrompt,
@@ -454,6 +458,68 @@ function ComicCreatorInner() {
               />
             </div>
 
+            {/* Story Bible & Malaysian Comic Mode (V2.0) */}
+            <div className="md:col-span-2 rounded-2xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)]/70 p-4 space-y-3">
+              <div className="text-xs font-black uppercase tracking-wider text-[#00D9FF]">
+                V2.0 Story Bible &amp; Malaysian Comic Mode (Optional)
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div>
+                  <Label>Story Bible World</Label>
+                  <Select
+                    value={project.worldId || ''}
+                    onChange={(e) => setProject({ ...project, worldId: e.target.value || undefined })}
+                  >
+                    <option value="">None (Standalone)</option>
+                    {worlds.map((w) => (
+                      <option key={w.id} value={w.id}>
+                        {w.worldName} ({w.worldRules.length} rules)
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label>Malaysian Dialogue Style</Label>
+                  <Select
+                    value={project.dialogueStyle || 'Standard Malaysian Malay'}
+                    onChange={(e) => setProject({ ...project, dialogueStyle: e.target.value })}
+                  >
+                    {MALAYSIAN_DIALOGUE_STYLES.map((ds) => (
+                      <option key={ds} value={ds}>
+                        {ds}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label>Regional Dialect (Guidance)</Label>
+                  <Select
+                    value={project.regionalDialect || 'None'}
+                    onChange={(e) => setProject({ ...project, regionalDialect: e.target.value })}
+                  >
+                    {MALAYSIAN_REGIONAL_PRESETS.map((rd) => (
+                      <option key={rd} value={rd}>
+                        {rd}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div>
+                  <Label>Cultural Context</Label>
+                  <Select
+                    value={project.culturalContext || 'None (Universal)'}
+                    onChange={(e) => setProject({ ...project, culturalContext: e.target.value })}
+                  >
+                    {MALAYSIAN_CULTURAL_CONTEXTS.map((cc) => (
+                      <option key={cc} value={cc}>
+                        {cc}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+              </div>
+            </div>
+
             {/* Assign Characters */}
             <div className="md:col-span-2 space-y-2">
               <Label>Assign Characters from Character Studio</Label>
@@ -470,7 +536,7 @@ function ComicCreatorInner() {
                         key={c.id}
                         type="button"
                         onClick={() => toggleCharacter(c.id)}
-                        className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                        className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer min-h-[44px] ${
                           selected
                             ? 'cf-selected-ring bg-[#6366F1]/20 text-[var(--cf-text)]'
                             : 'border-[var(--cf-border)] bg-[var(--cf-surface-2)] text-[var(--cf-muted)]'

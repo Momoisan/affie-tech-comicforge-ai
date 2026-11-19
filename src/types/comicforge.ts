@@ -175,6 +175,32 @@ export const CharacterProfileSchema = z.object({
   referenceImageUrl: z.string().optional(),
   version: z.number().int().min(1).default(1),
   status: z.enum(['active', 'archived']).default('active'),
+  // V2.0 Extensions (optional for V1 backward compatibility)
+  species: z.string().max(80).optional(),
+  customSpecies: z.string().max(120).optional(),
+  defaultPose: z.string().max(80).optional(),
+  continuityPrompt: z.string().optional(),
+  outfits: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    category: z.string(),
+    description: z.string(),
+    colors: z.string(),
+    accessories: z.string(),
+    footwear: z.string(),
+  })).optional(),
+  versions: z.array(z.object({
+    versionNumber: z.number().int().min(1),
+    label: z.string(),
+    ageRange: z.string(),
+    outfitName: z.string(),
+    hairStyle: z.string(),
+    equipment: z.string(),
+    physicalCondition: z.string(),
+    status: z.enum(['active', 'injured', 'deceased', 'missing']),
+    notes: z.string(),
+    createdAt: z.string(),
+  })).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -219,6 +245,24 @@ export const StructuredPanelSchema = z.object({
   continuity_notes: z.array(z.string()).default([]),
   human_readable_prompt: z.string().optional(),
   generation_notes: z.string().optional(),
+  // V2.0 Smart Panel Director fields
+  stable_panel_id: z.string().optional(),
+  scene_purpose: z.string().optional(),
+  shot_type: z.string().optional(),
+  sound_effects: z.string().optional(),
+  art_style_override: z.string().optional(),
+  revisions: z.array(z.object({
+    revisionNumber: z.number().int().min(1),
+    camera: z.string(),
+    shotType: z.string(),
+    composition: z.string(),
+    lighting: z.string(),
+    dialogue: z.array(PanelDialogueLineSchema),
+    imagePrompt: z.string(),
+    negativePrompt: z.string(),
+    engineUsed: z.enum(ENGINE_IDS),
+    createdAt: z.string(),
+  })).optional(),
 });
 export type StructuredPanel = z.infer<typeof StructuredPanelSchema>;
 
@@ -275,6 +319,10 @@ export const ComicProjectSchema = z.object({
   dialogueLength: z.enum(['short', 'medium', 'detailed']).default('medium'),
   pacing: z.enum(['fast', 'balanced', 'slow-burn']).default('balanced'),
   assignedCharacterIds: z.array(z.string()).default([]),
+  worldId: z.string().optional(),
+  dialogueStyle: z.string().optional(),
+  regionalDialect: z.string().optional(),
+  culturalContext: z.string().optional(),
   storyOutline: StoryOutlineSchema.optional(),
   status: z.enum(['draft', 'in_progress', 'completed', 'archived']).default('draft'),
   lastEngineUsed: z.enum(ENGINE_IDS).optional(),
@@ -344,8 +392,13 @@ export const GenerateComicRequestSchema = z.object({
     panelsPerScene: z.number().int().min(1).max(6).default(3),
     dialogueLength: z.enum(['short', 'medium', 'detailed']).default('medium'),
     pacing: z.enum(['fast', 'balanced', 'slow-burn']).default('balanced'),
+    dialogueStyle: z.string().max(80).optional(),
+    regionalDialect: z.string().max(80).optional(),
+    culturalContext: z.string().max(120).optional(),
   }),
   characters: z.array(CharacterProfileSchema).max(10).default([]),
+  worldRules: z.array(z.string()).max(20).optional(),
+  worldName: z.string().max(120).optional(),
 });
 export type GenerateComicRequest = z.infer<typeof GenerateComicRequestSchema>;
 
@@ -364,3 +417,265 @@ export interface EngineStatusSummary {
   defaultEngineMode: EngineMode;
   activeStorageMode: 'supabase' | 'local-browser';
 }
+
+// ============================================================================
+// V2.0 CONSTANTS & SCHEMAS — STORY BIBLE, CHARACTER V2, DIRECTOR, PACKAGE
+// ============================================================================
+
+export const UNIVERSE_PRESETS = [
+  'Medieval Fantasy',
+  'Modern Fantasy',
+  'Isekai',
+  'Dark Fantasy',
+  'Science Fantasy',
+  'Cyberpunk',
+  'Post-Apocalyptic',
+  'Supernatural',
+  'Mythological',
+  'Custom Universe',
+] as const;
+export type UniversePreset = (typeof UNIVERSE_PRESETS)[number];
+
+export const FANTASY_SPECIES = [
+  'Human',
+  'Elf',
+  'Dark Elf',
+  'Dwarf',
+  'Goblin',
+  'Orc',
+  'Beastfolk',
+  'Dragonkin',
+  'Demon',
+  'Angel',
+  'Slime',
+  'Undead',
+  'Vampire',
+  'Fairy',
+  'Spirit',
+  'Hybrid Species',
+  'Custom Species',
+] as const;
+export type FantasySpecies = (typeof FANTASY_SPECIES)[number];
+
+export const POSE_PRESETS = [
+  'Standing',
+  'Sitting',
+  'Walking',
+  'Running',
+  'Fighting',
+  'Jumping',
+  'Looking Back',
+  'Pointing',
+  'Custom Pose',
+] as const;
+export type PosePreset = (typeof POSE_PRESETS)[number];
+
+export const CAMERA_ANGLES_V2 = [
+  'Eye Level',
+  'Low Angle',
+  'High Angle',
+  "Bird's Eye View",
+  'Over-the-Shoulder',
+  'Dutch Angle',
+  'First-Person POV',
+] as const;
+
+export const SHOT_TYPES_V2 = [
+  'Extreme Close-Up',
+  'Close-Up',
+  'Medium Shot',
+  'Full Shot',
+  'Wide Shot',
+  'Establishing Shot',
+  'Dynamic Action Shot',
+] as const;
+
+export const COMPOSITIONS_V2 = [
+  'Rule of Thirds',
+  'Centered Composition',
+  'Symmetrical',
+  'Diagonal Composition',
+  'Foreground Framing',
+  'Cinematic Depth',
+] as const;
+
+export const MALAYSIAN_DIALOGUE_STYLES = [
+  'Standard Malaysian Malay',
+  'Casual Malaysian Malay',
+  'Gen-Z Malaysian Malay',
+  'Formal Malaysian Malay',
+  'Regional Dialogue',
+] as const;
+
+export const MALAYSIAN_REGIONAL_PRESETS = [
+  'None',
+  'Kedah',
+  'Kelantan',
+  'Terengganu',
+  'Negeri Sembilan',
+  'Johor',
+  'Sabah',
+  'Sarawak',
+] as const;
+
+export const MALAYSIAN_CULTURAL_CONTEXTS = [
+  'None (Universal)',
+  'Malaysian School',
+  'University Life',
+  'Kampung',
+  'Urban Kuala Lumpur',
+  'Malaysian Office',
+  'Family Drama',
+  'Local Comedy',
+  'Malaysian Superhero',
+  'Malaysian Fantasy',
+  'Local Folklore',
+] as const;
+
+// Story Bible Schemas
+export const WorldLocationSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  locationType: z.string().default('Urban / Interior'),
+  description: z.string().default(''),
+  architecture: z.string().default(''),
+  environment: z.string().default(''),
+  lightingCharacteristics: z.string().default('Natural daylight'),
+  importantObjects: z.string().default(''),
+  historicalContext: z.string().default(''),
+  referenceImageUrl: z.string().optional(),
+  continuityNotes: z.string().default(''),
+  isDestroyed: z.boolean().default(false),
+});
+export type WorldLocation = z.infer<typeof WorldLocationSchema>;
+
+export const WorldFactionSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  factionType: z.string().default('Organization'),
+  description: z.string().default(''),
+  alignment: z.string().default('Neutral'),
+  keyRulesOrGoals: z.string().default(''),
+});
+export type WorldFaction = z.infer<typeof WorldFactionSchema>;
+
+export const StoryEventSchema = z.object({
+  id: z.string(),
+  episodeNumber: z.number().int().min(1).default(1),
+  timelinePosition: z.number().int().min(1).default(1),
+  eventType: z.enum(['plot', 'character', 'world_change', 'conflict', 'exception']).default('plot'),
+  title: z.string().min(1),
+  description: z.string().default(''),
+  locationName: z.string().default(''),
+  charactersInvolved: z.array(z.string()).default([]),
+  isFlashbackOrException: z.boolean().default(false),
+  exceptionReason: z.string().default(''),
+});
+export type StoryEvent = z.infer<typeof StoryEventSchema>;
+
+export const StoryWorldSchema = z.object({
+  id: z.string(),
+  projectId: z.string().optional(),
+  worldName: z.string().min(1),
+  universePreset: z.string().default('Modern Fantasy'),
+  worldDescription: z.string().default(''),
+  genre: z.string().default('Fantasy'),
+  historicalPeriod: z.string().default('Contemporary'),
+  technologyLevel: z.string().default('Modern'),
+  geography: z.string().default(''),
+  climate: z.string().default('Tropical'),
+  culture: z.string().default(''),
+  society: z.string().default(''),
+  politicalStructure: z.string().default(''),
+  magicSystem: z.string().default(''),
+  powerSystem: z.string().default(''),
+  customSpeciesNote: z.string().default(''),
+  worldRules: z.array(z.string()).default([]),
+  locations: z.array(WorldLocationSchema).default([]),
+  factions: z.array(WorldFactionSchema).default([]),
+  timeline: z.array(StoryEventSchema).default([]),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type StoryWorld = z.infer<typeof StoryWorldSchema>;
+
+export interface ContinuityWarning {
+  id: string;
+  severity: 'warning' | 'info';
+  category: 'location' | 'character' | 'world_rule' | 'timeline';
+  message: string;
+  suggestion: string;
+}
+
+// Character Studio V2 Extensions
+export const CharacterOutfitSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1),
+  category: z.string().default('Casual'),
+  description: z.string().default(''),
+  colors: z.string().default(''),
+  accessories: z.string().default(''),
+  footwear: z.string().default(''),
+});
+export type CharacterOutfit = z.infer<typeof CharacterOutfitSchema>;
+
+export const CharacterVersionEntrySchema = z.object({
+  versionNumber: z.number().int().min(1),
+  label: z.string().default('Base Version'),
+  ageRange: z.string().default('Young Adult'),
+  outfitName: z.string().default('Primary Outfit'),
+  hairStyle: z.string().default(''),
+  equipment: z.string().default(''),
+  physicalCondition: z.string().default('Healthy'),
+  status: z.enum(['active', 'injured', 'deceased', 'missing']).default('active'),
+  notes: z.string().default(''),
+  createdAt: z.string(),
+});
+export type CharacterVersionEntry = z.infer<typeof CharacterVersionEntrySchema>;
+
+// Panel Revision & Prompt Package V2
+export const PanelRevisionSchema = z.object({
+  revisionNumber: z.number().int().min(1),
+  camera: z.string(),
+  shotType: z.string().default('Medium Shot'),
+  composition: z.string(),
+  lighting: z.string(),
+  dialogue: z.array(PanelDialogueLineSchema).default([]),
+  imagePrompt: z.string(),
+  negativePrompt: z.string(),
+  engineUsed: z.enum(ENGINE_IDS),
+  createdAt: z.string(),
+});
+export type PanelRevision = z.infer<typeof PanelRevisionSchema>;
+
+export interface PromptQualityWarning {
+  code: string;
+  severity: 'warning' | 'error';
+  message: string;
+}
+
+export const PromptPackageSchema = z.object({
+  id: z.string(),
+  projectId: z.string().optional(),
+  projectTitle: z.string().default('Untitled'),
+  scope: z.enum(['panel', 'scene', 'episode']).default('panel'),
+  targetPlatform: z.enum(EXPORT_TARGETS).default('chatgpt'),
+  engineUsed: z.enum(ENGINE_IDS).default('local'),
+  mainImagePrompt: z.string(),
+  characterIdentityBlocks: z.string(),
+  characterReferenceInstructions: z.string(),
+  sceneDescription: z.string(),
+  cameraInstructions: z.string(),
+  artStyleInstructions: z.string(),
+  lightingInstructions: z.string(),
+  environmentDescription: z.string(),
+  dialogueReference: z.string(),
+  negativePrompt: z.string(),
+  continuityInstructions: z.string(),
+  fullPackageText: z.string(),
+  jsonExport: z.record(z.string(), z.unknown()),
+  version: z.number().int().min(1).default(1),
+  createdAt: z.string(),
+});
+export type PromptPackage = z.infer<typeof PromptPackageSchema>;
+

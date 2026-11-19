@@ -11,6 +11,9 @@ export interface Translations {
     dashboard: string;
     creator: string;
     characters: string;
+    storyBible: string;
+    director: string;
+    packageStudio: string;
     prompts: string;
     projects: string;
     settings: string;
@@ -117,7 +120,7 @@ export const TRANSLATIONS: Record<UILanguage, Translations> = {
     brand: {
       name: 'AFFIE TECH',
       appName: 'ComicForge AI',
-      tagline: 'Cipta Cerita. Reka Watak. Jana Prompt Komik.',
+      tagline: 'Dari Imaginasi ke Penciptaan Komik.',
       noticeNoInternalImages:
         'ComicForge AI menjana cerita, watak & prompt imej berstruktur. Salin prompt ke ChatGPT Images atau Google Gemini untuk menjana gambar komik anda secara luaran.',
     },
@@ -125,6 +128,9 @@ export const TRANSLATIONS: Record<UILanguage, Translations> = {
       dashboard: 'Papan Pemuka',
       creator: 'Cipta Komik',
       characters: 'Studio Watak',
+      storyBible: 'Story Bible',
+      director: 'Pengarah Panel',
+      packageStudio: 'Studio Pakej Prompt',
       prompts: 'Pustaka Prompt',
       projects: 'Projek Saya',
       settings: 'Tetapan',
@@ -243,7 +249,7 @@ export const TRANSLATIONS: Record<UILanguage, Translations> = {
     brand: {
       name: 'AFFIE TECH',
       appName: 'ComicForge AI',
-      tagline: 'Create Stories. Design Characters. Generate Comic Prompts.',
+      tagline: 'From Imagination to Comic Creation.',
       noticeNoInternalImages:
         'ComicForge AI generates structured stories, character sheets & image prompts. Copy prompts into ChatGPT Images or Google Gemini to generate images externally.',
     },
@@ -251,6 +257,9 @@ export const TRANSLATIONS: Record<UILanguage, Translations> = {
       dashboard: 'Dashboard',
       creator: 'Comic Creator',
       characters: 'Character Studio',
+      storyBible: 'Story Bible',
+      director: 'Smart Panel Director',
+      packageStudio: 'Prompt Package Studio',
       prompts: 'Prompt Library',
       projects: 'My Projects',
       settings: 'Settings',

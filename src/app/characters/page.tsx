@@ -27,11 +27,15 @@ import {
 import {
   CHARACTER_EXPRESSIONS,
   CHARACTER_VISUAL_STYLES,
+  FANTASY_SPECIES,
+  POSE_PRESETS,
   type CharacterProfile,
   type ExportTarget,
 } from '@/types/comicforge';
 import { generateId } from '@/lib/utils';
 import { buildCanonicalIdentityBlock } from '@/lib/ai/prompt-formatter';
+import { validateCharacterConsistency } from '@/lib/v2/continuity-validator';
+import { buildCharacterContinuityPrompt } from '@/lib/v2/prompt-package';
 
 function createBlankCharacter(index: number): CharacterProfile {
   const now = '';
@@ -670,6 +674,148 @@ export default function CharacterStudioPage() {
                           {t.actions.openGemini}
                           <ExternalLink className="w-3 h-3" />
                         </a>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* V2.0: Species, Pose, Versions, Outfits & Continuity Prompt */}
+                <div className="space-y-4 pt-4 border-t border-[var(--cf-border)]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#00D9FF]">
+                      V2.0 Consistency, Versions &amp; Outfit Library
+                    </span>
+                    <Badge variant="indigo">v{form.version}</Badge>
+                  </div>
+
+                  {validateCharacterConsistency(form).map((w) => (
+                    <div
+                      key={w.id}
+                      className="rounded-xl border border-amber-500/40 bg-amber-950/30 p-2.5 text-xs text-amber-200"
+                    >
+                      <strong>{w.message}</strong> — {w.suggestion}
+                    </div>
+                  ))}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <Label>Species</Label>
+                      <Select
+                        value={form.species || 'Human'}
+                        onChange={(e) => setForm({ ...form, species: e.target.value })}
+                      >
+                        {FANTASY_SPECIES.map((sp) => (
+                          <option key={sp} value={sp}>
+                            {sp}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Default Pose Preset</Label>
+                      <Select
+                        value={form.defaultPose || 'Standing'}
+                        onChange={(e) => setForm({ ...form, defaultPose: e.target.value })}
+                      >
+                        {POSE_PRESETS.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        const nextVer = (form.versions?.length ?? 0) + 1;
+                        const entry = {
+                          versionNumber: nextVer,
+                          label: nextVer === 1 ? 'Base Version' : `Evolution v${nextVer}`,
+                          ageRange: form.ageRange,
+                          outfitName: form.primaryOutfit || 'Signature Outfit',
+                          hairStyle: form.hairStyle,
+                          equipment: form.accessories,
+                          physicalCondition: 'Healthy',
+                          status: 'active' as const,
+                          notes: '',
+                          createdAt: new Date().toISOString(),
+                        };
+                        setForm({
+                          ...form,
+                          version: nextVer,
+                          versions: [...(form.versions ?? []), entry],
+                        });
+                        notify(`Added Character Version v${nextVer}`, 'success');
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Add Character Version
+                    </Button>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const outfit = {
+                          id: generateId('out'),
+                          name: `Outfit ${(form.outfits?.length ?? 0) + 1}`,
+                          category: 'Casual',
+                          description: form.primaryOutfit || 'Custom outfit',
+                          colors: form.outfitColors || 'Balanced',
+                          accessories: form.accessories || '',
+                          footwear: form.footwear || '',
+                        };
+                        setForm({
+                          ...form,
+                          outfits: [...(form.outfits ?? []), outfit],
+                        });
+                        notify(`Saved "${outfit.name}" to Outfit Library`, 'success');
+                      }}
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Save Current to Outfit Library
+                    </Button>
+
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="accent"
+                      onClick={async () => {
+                        const txt = buildCharacterContinuityPrompt(form, form.version);
+                        await navigator.clipboard.writeText(txt);
+                        notify('Character Continuity Prompt disalin!', 'success');
+                      }}
+                    >
+                      <Copy className="w-3.5 h-3.5" /> Copy Character Continuity Prompt
+                    </Button>
+                  </div>
+
+                  {(form.versions?.length ?? 0) > 0 && (
+                    <div className="space-y-1.5">
+                      <Label>Saved Versions ({form.versions?.length})</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {form.versions?.map((v) => (
+                          <Badge key={v.versionNumber} variant="cyan">
+                            v{v.versionNumber}: {v.label} ({v.status})
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(form.outfits?.length ?? 0) > 0 && (
+                    <div className="space-y-1.5">
+                      <Label>Outfit Library ({form.outfits?.length})</Label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {form.outfits?.map((o) => (
+                          <Badge key={o.id} variant="yellow">
+                            {o.name}: {o.description.slice(0, 32)}
+                          </Badge>
+                        ))}
                       </div>
                     </div>
                   )}

@@ -5,13 +5,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Clapperboard,
   Cpu,
   FolderKanban,
+  Globe2,
   Languages,
   LayoutDashboard,
   Library,
   Menu,
   Moon,
+  PackageCheck,
   Settings,
   Sparkles,
   Sun,
@@ -26,14 +31,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { t, preferences, updatePreferences, engineStatus, toasts, dismissToast } =
     useComicForge();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const navItems = [
     { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
     { href: '/creator', label: t.nav.creator, icon: Sparkles },
     { href: '/characters', label: t.nav.characters, icon: Users },
-    { href: '/prompts', label: t.nav.prompts, icon: BookOpen },
+    { href: '/story-bible', label: t.nav.storyBible, icon: Globe2 },
+    { href: '/director', label: t.nav.director, icon: Clapperboard },
+    { href: '/package-studio', label: t.nav.packageStudio, icon: PackageCheck },
     { href: '/projects', label: t.nav.projects, icon: FolderKanban },
     { href: '/settings', label: t.nav.settings, icon: Settings },
+  ];
+
+  const mobileBottomItems = [
+    { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: '/creator', label: t.nav.creator, icon: Sparkles },
+    { href: '/story-bible', label: t.nav.storyBible, icon: Globe2 },
+    { href: '/director', label: t.nav.director, icon: Clapperboard },
+    { href: '/package-studio', label: t.nav.packageStudio, icon: PackageCheck },
   ];
 
   const toggleLang = () => {
@@ -51,19 +67,39 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex bg-[var(--cf-bg)] text-[var(--cf-text)]">
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex lg:w-68 lg:flex-col border-r border-[var(--cf-border)] bg-[var(--cf-surface)]/80 backdrop-blur-xl sticky top-0 h-screen">
-        <div className="p-5 border-b border-[var(--cf-border)]">
-          <Link href="/" className="block group">
-            <div className="text-[11px] font-bold tracking-[0.22em] uppercase text-[#00D9FF]">
-              {t.brand.name}
-            </div>
-            <div className="text-xl font-extrabold tracking-tight text-[var(--cf-text)] group-hover:text-[#6366F1] transition-colors">
-              {t.brand.appName}
-            </div>
-            <p className="text-xs text-[var(--cf-muted)] mt-1 leading-snug">
-              {t.brand.tagline}
-            </p>
-          </Link>
+      <aside
+        className={cn(
+          'hidden lg:flex lg:flex-col border-r border-[var(--cf-border)] bg-[var(--cf-surface)]/80 backdrop-blur-xl sticky top-0 h-screen transition-all duration-200',
+          sidebarCollapsed ? 'lg:w-20' : 'lg:w-68'
+        )}
+      >
+        <div className="p-4 border-b border-[var(--cf-border)] flex items-center justify-between gap-2">
+          {!sidebarCollapsed && (
+            <Link href="/" className="block group min-w-0">
+              <div className="text-[11px] font-bold tracking-[0.22em] uppercase text-[#00D9FF]">
+                {t.brand.name}
+              </div>
+              <div className="text-xl font-extrabold tracking-tight text-[var(--cf-text)] group-hover:text-[#6366F1] transition-colors truncate">
+                {t.brand.appName}
+              </div>
+              <p className="text-xs text-[var(--cf-muted)] mt-1 leading-snug line-clamp-2">
+                {t.brand.tagline}
+              </p>
+            </Link>
+          )}
+          <button
+            type="button"
+            onClick={() => setSidebarCollapsed((c) => !c)}
+            className="p-2 rounded-lg border border-[var(--cf-border)] bg-[var(--cf-surface-2)] hover:border-[#00D9FF]/60 shrink-0 cursor-pointer"
+            aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="w-4 h-4 text-[#00D9FF]" />
+            ) : (
+              <ChevronLeft className="w-4 h-4 text-[#00D9FF]" />
+            )}
+          </button>
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto" aria-label="Main Navigation">
@@ -74,48 +110,66 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={item.href}
+                title={sidebarCollapsed ? item.label : undefined}
                 className={cn(
-                  'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all',
+                  'flex items-center gap-3 px-3.5 py-2.5 min-h-[44px] rounded-xl text-sm font-medium transition-all',
+                  sidebarCollapsed && 'justify-center px-2',
                   active
                     ? 'bg-[#6366F1]/18 text-[var(--cf-text)] border border-[#FACC15]/70 shadow-sm'
                     : 'text-[var(--cf-muted)] hover:text-[var(--cf-text)] hover:bg-[var(--cf-surface-2)]'
                 )}
               >
                 <Icon
-                  className={cn('w-4 h-4', active ? 'text-[#FACC15]' : 'text-[#00D9FF]')}
+                  className={cn('w-4 h-4 shrink-0', active ? 'text-[#FACC15]' : 'text-[#00D9FF]')}
                 />
-                <span>{item.label}</span>
+                {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
               </Link>
             );
           })}
+          {!sidebarCollapsed && (
+            <Link
+              href="/prompts"
+              className={cn(
+                'flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-medium transition-all mt-2',
+                pathname === '/prompts'
+                  ? 'bg-[#6366F1]/18 text-[var(--cf-text)] border border-[#FACC15]/70'
+                  : 'text-[var(--cf-muted)] hover:text-[var(--cf-text)] hover:bg-[var(--cf-surface-2)]'
+              )}
+            >
+              <BookOpen className="w-3.5 h-3.5 text-[#00D9FF]" />
+              <span>{t.nav.prompts}</span>
+            </Link>
+          )}
         </nav>
 
         {/* Engine Status Footer */}
-        <div className="p-4 border-t border-[var(--cf-border)] space-y-2">
-          <div className="rounded-xl bg-[var(--cf-surface-2)] p-3 border border-[var(--cf-border)]">
-            <div className="flex items-center justify-between text-xs font-semibold">
-              <span className="flex items-center gap-1.5 text-[var(--cf-text)]">
-                <Cpu className="w-3.5 h-3.5 text-[#00D9FF]" />
-                {t.dashboard.engineStatus}
-              </span>
-              <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">
-                V1.0
-              </span>
-            </div>
-            <div className="mt-2 space-y-1 text-[11px] text-[var(--cf-muted)]">
-              <div className="flex justify-between">
-                <span>Gemini API</span>
-                <span className={engineStatus?.geminiConfigured ? 'text-emerald-400' : 'text-amber-400'}>
-                  {engineStatus?.geminiConfigured ? 'Ready' : 'Not Configured'}
+        {!sidebarCollapsed && (
+          <div className="p-4 border-t border-[var(--cf-border)] space-y-2">
+            <div className="rounded-xl bg-[var(--cf-surface-2)] p-3 border border-[var(--cf-border)]">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="flex items-center gap-1.5 text-[var(--cf-text)]">
+                  <Cpu className="w-3.5 h-3.5 text-[#00D9FF]" />
+                  {t.dashboard.engineStatus}
+                </span>
+                <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">
+                  V2.0
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span>Local Engine</span>
-                <span className="text-emerald-400">Ready</span>
+              <div className="mt-2 space-y-1 text-[11px] text-[var(--cf-muted)]">
+                <div className="flex justify-between">
+                  <span>Gemini API</span>
+                  <span className={engineStatus?.geminiConfigured ? 'text-emerald-400' : 'text-amber-400'}>
+                    {engineStatus?.geminiConfigured ? 'Ready' : 'Not Configured'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Local Engine</span>
+                  <span className="text-emerald-400">Ready</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </aside>
 
       {/* Mobile Drawer */}
@@ -131,18 +185,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#00D9FF]">
                   {t.brand.name}
                 </div>
-                <div className="text-lg font-extrabold">{t.brand.appName}</div>
+                <div className="text-lg font-extrabold">{t.brand.appName} V2.0</div>
               </div>
               <button
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="p-2 rounded-lg hover:bg-[var(--cf-surface-2)]"
+                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[var(--cf-surface-2)]"
                 aria-label="Close navigation"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <nav className="flex-1 p-3 space-y-1">
+            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const active = pathname === item.href;
@@ -152,7 +206,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      'flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium',
+                      'flex items-center gap-3 px-3.5 py-2.5 min-h-[44px] rounded-xl text-sm font-medium',
                       active
                         ? 'bg-[#6366F1]/20 border border-[#FACC15]/70 text-[var(--cf-text)]'
                         : 'text-[var(--cf-muted)] hover:bg-[var(--cf-surface-2)]'
@@ -163,6 +217,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </Link>
                 );
               })}
+              <Link
+                href="/prompts"
+                onClick={() => setMobileOpen(false)}
+                className={cn(
+                  'flex items-center gap-3 px-3.5 py-2.5 min-h-[44px] rounded-xl text-sm font-medium',
+                  pathname === '/prompts'
+                    ? 'bg-[#6366F1]/20 border border-[#FACC15]/70 text-[var(--cf-text)]'
+                    : 'text-[var(--cf-muted)] hover:bg-[var(--cf-surface-2)]'
+                )}
+              >
+                <BookOpen className="w-4 h-4 text-[#00D9FF]" />
+                <span>{t.nav.prompts}</span>
+              </Link>
             </nav>
           </aside>
         </div>
@@ -177,7 +244,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={() => setMobileOpen(true)}
-                className="lg:hidden p-2 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)]"
+                className="lg:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)]"
                 aria-label="Open navigation"
               >
                 <Menu className="w-5 h-5" />
@@ -193,7 +260,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={toggleLang}
-                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)] text-xs font-semibold hover:border-[#00D9FF]/60 cursor-pointer"
+                className="inline-flex items-center gap-1.5 min-h-[44px] sm:min-h-0 sm:h-9 px-3 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)] text-xs font-semibold hover:border-[#00D9FF]/60 cursor-pointer"
                 title="Switch Language (BM / EN)"
               >
                 <Languages className="w-3.5 h-3.5 text-[#00D9FF]" />
@@ -202,7 +269,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)] hover:border-[#00D9FF]/60 cursor-pointer"
+                className="inline-flex items-center justify-center min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 sm:w-9 sm:h-9 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface)] hover:border-[#00D9FF]/60 cursor-pointer"
                 aria-label="Toggle theme"
               >
                 {preferences.theme === 'dark' ? (
@@ -215,9 +282,33 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
+
+        {/* Mobile Bottom Navigation Bar */}
+        <nav
+          aria-label="Mobile Quick Navigation"
+          className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--cf-border)] bg-[var(--cf-surface)]/95 backdrop-blur-lg flex items-center justify-around px-1 py-1"
+        >
+          {mobileBottomItems.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={cn(
+                  'flex flex-col items-center justify-center min-w-[44px] min-h-[44px] px-2 py-1 rounded-lg text-[10px] font-medium transition-colors',
+                  active ? 'text-[#FACC15]' : 'text-[var(--cf-muted)] hover:text-[var(--cf-text)]'
+                )}
+              >
+                <Icon className={cn('w-4 h-4 mb-0.5', active ? 'text-[#FACC15]' : 'text-[#00D9FF]')} />
+                <span className="truncate max-w-[64px]">{item.label}</span>
+              </Link>
+            );
+          })}
+        </nav>
       </div>
 
       {/* Toast Stack */}

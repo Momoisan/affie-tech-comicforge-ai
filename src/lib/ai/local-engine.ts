@@ -433,22 +433,39 @@ export function generateWithLocalEngine(input: GenerateComicRequest): StoryOutli
 
         const negativePrompt = `${styleSpec.negativeKeywords}, inconsistent character face, changing outfit colors, extra fingers, deformed anatomy, blurry text, watermark`;
 
+        const culturalNote =
+          project.culturalContext && project.culturalContext !== 'None (Universal)'
+            ? `Cultural setting: ${project.culturalContext}. `
+            : '';
+
+        const worldRulesNote =
+          input.worldRules && input.worldRules.length > 0
+            ? [`World Rules (${input.worldName || 'Story Bible'}): ${input.worldRules.join('; ')}`]
+            : [];
+
         const continuityNotes = [
           `Maintain locked identity & signature outfit for ${panelChars.map((c) => c.name).join(', ')}`,
           `Location continuity: ${location} (${sceneLighting})`,
           `Project art style locked to ${project.artStyle}`,
+          ...worldRulesNote,
         ];
+
+        const shotTypes = ['Establishing Shot', 'Medium Shot', 'Close-Up', 'Dynamic Action Shot'];
+        const shotType = shotTypes[pIdx % shotTypes.length];
 
         const structuredPanel: StructuredPanel = {
           project_id: project.id,
+          stable_panel_id: `pnl_${project.id}_e${epNum}_s${scNum}_p${pNum}`,
           episode_number: epNum,
           scene_number: scNum,
           panel_number: pNum,
           art_style: project.artStyle,
           aspect_ratio: project.aspectRatio,
-          scene_context: sceneContext,
+          scene_context: `${culturalNote}${sceneContext}`,
+          scene_purpose: pIdx === 0 ? 'Scene Setup' : pIdx === project.panelsPerScene - 1 ? 'Turning Point' : 'Action / Dialogue Beat',
+          shot_type: shotType,
           characters: charAppearances,
-          environment: location,
+          environment: culturalNote ? `${location} (${project.culturalContext})` : location,
           camera,
           composition,
           lighting: sceneLighting,
