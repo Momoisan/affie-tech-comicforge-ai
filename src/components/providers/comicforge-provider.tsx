@@ -5,6 +5,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
 } from 'react';
 import type {
@@ -75,7 +76,7 @@ interface ComicForgeContextValue {
   savePrompt: (prompt: SavedPrompt) => void;
   deletePrompt: (id: string) => void;
 
-  // V2 Story Bible Worlds
+  // V2 Story Universe Worlds
   worlds: StoryWorld[];
   saveWorld: (world: StoryWorld) => void;
   deleteWorld: (id: string) => void;
@@ -88,14 +89,33 @@ interface ComicForgeContextValue {
 
 const ComicForgeContext = createContext<ComicForgeContextValue | null>(null);
 
-function safeReadStorage<T>(key: string, fallback: T): T {
+export function safeReadStorage<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
   try {
     const raw = window.localStorage.getItem(key);
     if (!raw) return fallback;
-    return JSON.parse(raw) as T;
+    const parsed = JSON.parse(raw) as unknown;
+    if (Array.isArray(fallback)) {
+      return (Array.isArray(parsed) ? parsed : fallback) as T;
+    }
+    if (fallback !== null && typeof fallback === 'object') {
+      return (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? parsed
+        : fallback) as T;
+    }
+    return (parsed ?? fallback) as T;
   } catch {
     return fallback;
+  }
+}
+
+export function safeWriteStorage(key: string, value: unknown): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
   }
 }
 
@@ -168,27 +188,44 @@ export function ComicForgeProvider({ children }: { children: React.ReactNode }) 
     []
   );
 
-  const updatePreferences = useCallback((patch: Partial<UserPreferences>) => {
-    setPreferences((prev) => {
-      const next = { ...prev, ...patch };
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.preferences, JSON.stringify(next));
+  const persistOrWarn = useCallback(
+    (key: string, value: unknown) => {
+      const ok = safeWriteStorage(key, value);
+      if (!ok) {
+        notify(
+          preferences.uiLanguage === 'ms-MY'
+            ? 'Amaran: Ruang simpanan pelayar penuh. Sila padam gambar rujukan besar atau eksport projek anda.'
+            : 'Warning: Browser storage quota exceeded. Consider removing large reference images or exporting your project.',
+          'error'
+        );
       }
-      return next;
-    });
-  }, []);
+    },
+    [notify, preferences.uiLanguage]
+  );
 
-  const saveProject = useCallback((project: ComicProject) => {
-    setProjects((prev) => {
-      const idx = prev.findIndex((p) => p.id === project.id);
-      const updated = { ...project, updatedAt: new Date().toISOString() };
-      const next = idx >= 0 ? prev.map((p) => (p.id === project.id ? updated : p)) : [updated, ...prev];
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const updatePreferences = useCallback(
+    (patch: Partial<UserPreferences>) => {
+      setPreferences((prev) => {
+        const next = { ...prev, ...patch };
+        persistOrWarn(STORAGE_KEYS.preferences, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
+
+  const saveProject = useCallback(
+    (project: ComicProject) => {
+      setProjects((prev) => {
+        const idx = prev.findIndex((p) => p.id === project.id);
+        const updated = { ...project, updatedAt: new Date().toISOString() };
+        const next = idx >= 0 ? prev.map((p) => (p.id === project.id ? updated : p)) : [updated, ...prev];
+        persistOrWarn(STORAGE_KEYS.projects, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
   const duplicateProject = useCallback(
     (id: string): ComicProject | null => {
@@ -209,40 +246,43 @@ export function ComicForgeProvider({ children }: { children: React.ReactNode }) 
     [projects, saveProject]
   );
 
-  const archiveProject = useCallback((id: string) => {
-    setProjects((prev) => {
-      const next = prev.map((p) =>
-        p.id === id ? { ...p, status: 'archived' as const, updatedAt: new Date().toISOString() } : p
-      );
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const archiveProject = useCallback(
+    (id: string) => {
+      setProjects((prev) => {
+        const next = prev.map((p) =>
+          p.id === id ? { ...p, status: 'archived' as const, updatedAt: new Date().toISOString() } : p
+        );
+        persistOrWarn(STORAGE_KEYS.projects, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
-  const deleteProject = useCallback((id: string) => {
-    // IMPORTANT: Never delete shared characters when a project is deleted!
-    setProjects((prev) => {
-      const next = prev.filter((p) => p.id !== id);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.projects, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const deleteProject = useCallback(
+    (id: string) => {
+      // IMPORTANT: Never delete shared characters when a project is deleted!
+      setProjects((prev) => {
+        const next = prev.filter((p) => p.id !== id);
+        persistOrWarn(STORAGE_KEYS.projects, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
-  const saveCharacter = useCallback((character: CharacterProfile) => {
-    setCharacters((prev) => {
-      const idx = prev.findIndex((c) => c.id === character.id);
-      const updated = { ...character, updatedAt: new Date().toISOString() };
-      const next = idx >= 0 ? prev.map((c) => (c.id === character.id ? updated : c)) : [updated, ...prev];
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.characters, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const saveCharacter = useCallback(
+    (character: CharacterProfile) => {
+      setCharacters((prev) => {
+        const idx = prev.findIndex((c) => c.id === character.id);
+        const updated = { ...character, updatedAt: new Date().toISOString() };
+        const next = idx >= 0 ? prev.map((c) => (c.id === character.id ? updated : c)) : [updated, ...prev];
+        persistOrWarn(STORAGE_KEYS.characters, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
   const duplicateCharacter = useCallback(
     (id: string): CharacterProfile | null => {
@@ -265,130 +305,169 @@ export function ComicForgeProvider({ children }: { children: React.ReactNode }) 
     [characters, saveCharacter]
   );
 
-  const archiveCharacter = useCallback((id: string) => {
-    setCharacters((prev) => {
-      const next = prev.map((c) =>
-        c.id === id
-          ? {
-              ...c,
-              status: c.status === 'archived' ? ('active' as const) : ('archived' as const),
-              updatedAt: new Date().toISOString(),
-            }
-          : c
-      );
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.characters, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const archiveCharacter = useCallback(
+    (id: string) => {
+      setCharacters((prev) => {
+        const next = prev.map((c) =>
+          c.id === id
+            ? {
+                ...c,
+                status: c.status === 'archived' ? ('active' as const) : ('archived' as const),
+                updatedAt: new Date().toISOString(),
+              }
+            : c
+        );
+        persistOrWarn(STORAGE_KEYS.characters, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
-  const deleteCharacter = useCallback((id: string) => {
-    setCharacters((prev) => {
-      const next = prev.filter((c) => c.id !== id);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.characters, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const deleteCharacter = useCallback(
+    (id: string) => {
+      setCharacters((prev) => {
+        const next = prev.filter((c) => c.id !== id);
+        persistOrWarn(STORAGE_KEYS.characters, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
-  const savePrompt = useCallback((prompt: SavedPrompt) => {
-    setPrompts((prev) => {
-      const next = [prompt, ...prev.filter((p) => p.id !== prompt.id)].slice(0, 200);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.prompts, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const savePrompt = useCallback(
+    (prompt: SavedPrompt) => {
+      setPrompts((prev) => {
+        const next = [prompt, ...prev.filter((p) => p.id !== prompt.id)].slice(0, 200);
+        persistOrWarn(STORAGE_KEYS.prompts, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
-  const deletePrompt = useCallback((id: string) => {
-    setPrompts((prev) => {
-      const next = prev.filter((p) => p.id !== id);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.prompts, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const deletePrompt = useCallback(
+    (id: string) => {
+      setPrompts((prev) => {
+        const next = prev.filter((p) => p.id !== id);
+        persistOrWarn(STORAGE_KEYS.prompts, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
-  const saveWorld = useCallback((world: StoryWorld) => {
-    setWorlds((prev) => {
-      const idx = prev.findIndex((w) => w.id === world.id);
-      const updated = { ...world, updatedAt: new Date().toISOString() };
-      const next = idx >= 0 ? prev.map((w) => (w.id === world.id ? updated : w)) : [updated, ...prev];
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.worlds, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const saveWorld = useCallback(
+    (world: StoryWorld) => {
+      setWorlds((prev) => {
+        const idx = prev.findIndex((w) => w.id === world.id);
+        const updated = { ...world, updatedAt: new Date().toISOString() };
+        const next = idx >= 0 ? prev.map((w) => (w.id === world.id ? updated : w)) : [updated, ...prev];
+        persistOrWarn(STORAGE_KEYS.worlds, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
-  const deleteWorld = useCallback((id: string) => {
-    setWorlds((prev) => {
-      const next = prev.filter((w) => w.id !== id);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.worlds, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const deleteWorld = useCallback(
+    (id: string) => {
+      setWorlds((prev) => {
+        const next = prev.filter((w) => w.id !== id);
+        persistOrWarn(STORAGE_KEYS.worlds, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
-  const savePromptPackage = useCallback((pkg: PromptPackage) => {
-    setPromptPackages((prev) => {
-      const next = [pkg, ...prev.filter((p) => p.id !== pkg.id)].slice(0, 200);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.packages, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const savePromptPackage = useCallback(
+    (pkg: PromptPackage) => {
+      setPromptPackages((prev) => {
+        const next = [pkg, ...prev.filter((p) => p.id !== pkg.id)].slice(0, 200);
+        persistOrWarn(STORAGE_KEYS.packages, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
-  const deletePromptPackage = useCallback((id: string) => {
-    setPromptPackages((prev) => {
-      const next = prev.filter((p) => p.id !== id);
-      if (typeof window !== 'undefined') {
-        window.localStorage.setItem(STORAGE_KEYS.packages, JSON.stringify(next));
-      }
-      return next;
-    });
-  }, []);
+  const deletePromptPackage = useCallback(
+    (id: string) => {
+      setPromptPackages((prev) => {
+        const next = prev.filter((p) => p.id !== id);
+        persistOrWarn(STORAGE_KEYS.packages, next);
+        return next;
+      });
+    },
+    [persistOrWarn]
+  );
 
   const t = TRANSLATIONS[preferences.uiLanguage] ?? TRANSLATIONS['ms-MY'];
 
+  const contextValue = useMemo<ComicForgeContextValue>(
+    () => ({
+      projects,
+      characters,
+      prompts,
+      preferences,
+      t,
+      engineStatus,
+      hydrated,
+      toasts,
+      notify,
+      dismissToast,
+      updatePreferences,
+      saveProject,
+      duplicateProject,
+      archiveProject,
+      deleteProject,
+      saveCharacter,
+      duplicateCharacter,
+      archiveCharacter,
+      deleteCharacter,
+      savePrompt,
+      deletePrompt,
+      worlds,
+      saveWorld,
+      deleteWorld,
+      promptPackages,
+      savePromptPackage,
+      deletePromptPackage,
+    }),
+    [
+      projects,
+      characters,
+      prompts,
+      preferences,
+      t,
+      engineStatus,
+      hydrated,
+      toasts,
+      notify,
+      dismissToast,
+      updatePreferences,
+      saveProject,
+      duplicateProject,
+      archiveProject,
+      deleteProject,
+      saveCharacter,
+      duplicateCharacter,
+      archiveCharacter,
+      deleteCharacter,
+      savePrompt,
+      deletePrompt,
+      worlds,
+      saveWorld,
+      deleteWorld,
+      promptPackages,
+      savePromptPackage,
+      deletePromptPackage,
+    ]
+  );
+
   return (
-    <ComicForgeContext.Provider
-      value={{
-        projects,
-        characters,
-        prompts,
-        preferences,
-        t,
-        engineStatus,
-        hydrated,
-        toasts,
-        notify,
-        dismissToast,
-        updatePreferences,
-        saveProject,
-        duplicateProject,
-        archiveProject,
-        deleteProject,
-        saveCharacter,
-        duplicateCharacter,
-        archiveCharacter,
-        deleteCharacter,
-        savePrompt,
-        deletePrompt,
-        worlds,
-        saveWorld,
-        deleteWorld,
-        promptPackages,
-        savePromptPackage,
-        deletePromptPackage,
-      }}
-    >
+    <ComicForgeContext.Provider value={contextValue}>
       {children}
     </ComicForgeContext.Provider>
   );

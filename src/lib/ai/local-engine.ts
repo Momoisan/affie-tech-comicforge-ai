@@ -439,7 +439,7 @@ export function generateWithLocalEngine(input: GenerateComicRequest): StoryOutli
 
         const worldRulesNote =
           input.worldRules && input.worldRules.length > 0
-            ? [`World Rules (${input.worldName || 'Story Bible'}): ${input.worldRules.join('; ')}`]
+            ? [`World Rules (${input.worldName || 'Story Universe Studio'}): ${input.worldRules.join('; ')}`]
             : [];
 
         const continuityNotes = [

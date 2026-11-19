@@ -463,14 +463,14 @@ function ComicCreatorInner() {
               />
             </div>
 
-            {/* World Lore & Malaysian Comic Mode (V2.0) */}
+            {/* Story Universe Studio & Malaysian Comic Mode (V2.0) */}
             <div className="md:col-span-2 rounded-2xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)]/70 p-4 space-y-3">
               <div className="text-xs font-black uppercase tracking-wider text-[#00D9FF]">
-                V2.0 World Lore &amp; Malaysian Comic Mode (Optional)
+                V2.0 Story Universe Studio &amp; Malaysian Comic Mode (Optional)
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
-                  <Label>World Lore</Label>
+                  <Label>Story Universe</Label>
                   <Select
                     value={project.worldId || ''}
                     onChange={(e) => setProject({ ...project, worldId: e.target.value || undefined })}

@@ -32,14 +32,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     useComicForge();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const drawerRef = React.useRef<HTMLElement>(null);
+  const closeDrawerBtnRef = React.useRef<HTMLButtonElement>(null);
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!mobileOpen) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    closeDrawerBtnRef.current?.focus();
+
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false);
+      if (e.key === 'Escape') {
+        setMobileOpen(false);
+        return;
+      }
+      if (e.key === 'Tab' && drawerRef.current) {
+        const focusables = drawerRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      previousFocusRef.current?.focus();
+    };
   }, [mobileOpen]);
 
   const navItems = [
@@ -183,12 +210,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Drawer */}
       {mobileOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex">
+        <div
+          className="fixed inset-0 z-50 lg:hidden flex"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Mobile Navigation"
+        >
           <div
             className="fixed inset-0 bg-black/60 backdrop-blur-sm"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="relative z-10 w-72 max-w-[85vw] bg-[var(--cf-surface)] border-r border-[var(--cf-border)] flex flex-col h-full">
+          <aside
+            ref={drawerRef}
+            className="relative z-10 w-72 max-w-[85vw] bg-[var(--cf-surface)] border-r border-[var(--cf-border)] flex flex-col h-full"
+          >
             <div className="p-4 border-b border-[var(--cf-border)] flex items-center justify-between">
               <div>
                 <div className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#00D9FF]">
@@ -197,18 +232,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <div className="text-lg font-extrabold">{t.brand.appName} V2.0</div>
               </div>
               <button
+                ref={closeDrawerBtnRef}
                 type="button"
                 onClick={() => setMobileOpen(false)}
-                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[var(--cf-surface-2)]"
+                className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg hover:bg-[var(--cf-surface-2)] focus-visible:outline-2 focus-visible:outline-[#00D9FF]"
                 aria-label="Close navigation"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
+            <nav className="flex-1 p-3 space-y-1 overflow-y-auto" aria-label="Mobile Drawer Navigation">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const active = pathname === item.href;
+                const active =
+                  pathname === item.href ||
+                  (item.href === '/story-bible' && pathname === '/story-universe');
                 return (
                   <Link
                     key={item.href}
@@ -245,7 +283,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0" aria-hidden={mobileOpen || undefined}>
         {/* Top Bar */}
         <header className="sticky top-0 z-30 border-b border-[var(--cf-border)] bg-[var(--cf-bg)]/85 backdrop-blur-md">
           <div className="px-4 sm:px-6 h-15 flex items-center justify-between gap-3">

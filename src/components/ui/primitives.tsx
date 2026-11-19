@@ -169,13 +169,41 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const cancelBtnRef = React.useRef<HTMLButtonElement>(null);
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
+
   React.useEffect(() => {
     if (!open) return;
+    previousFocusRef.current = document.activeElement as HTMLElement | null;
+    cancelBtnRef.current?.focus();
+
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Escape') {
+        onCancel();
+        return;
+      }
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      previousFocusRef.current?.focus();
+    };
   }, [open, onCancel]);
 
   if (!open) return null;
@@ -184,22 +212,27 @@ export function ConfirmDialog({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
+      aria-labelledby="cf-confirm-title"
       onClick={(e) => {
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <Card className="w-full max-w-md space-y-4">
-        <h3 className="text-lg font-bold text-[var(--cf-text)]">{title}</h3>
-        <p className="text-sm text-[var(--cf-muted)]">{description}</p>
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="outline" onClick={onCancel}>
-            {cancelLabel}
-          </Button>
-          <Button variant="danger" onClick={onConfirm}>
-            {confirmLabel}
-          </Button>
-        </div>
-      </Card>
+      <div ref={dialogRef} className="w-full max-w-md">
+        <Card className="w-full space-y-4">
+          <h3 id="cf-confirm-title" className="text-lg font-bold text-[var(--cf-text)]">
+            {title}
+          </h3>
+          <p className="text-sm text-[var(--cf-muted)]">{description}</p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button ref={cancelBtnRef} variant="outline" onClick={onCancel}>
+              {cancelLabel}
+            </Button>
+            <Button variant="danger" onClick={onConfirm}>
+              {confirmLabel}
+            </Button>
+          </div>
+        </Card>
+      </div>
     </div>
   );
 }
