@@ -3,23 +3,22 @@
 **Project:** AFFIE TECH ComicForge AI  
 **Branch:** `phase-1.5/verification-and-hardening`
 
-## Workflow & Route Inventory
+## Real-Browser Viewport Matrix (Playwright + Chromium)
 
-| Route | HTTP Check | Status | Notes |
-| :--- | :--- | :--- | :--- |
-| `/` (Dashboard) | `200` | **VERIFIED** | Hero, quick actions, recent projects/characters/prompts, engine status. |
-| `/creator` (Comic Creator) | `200` | **VERIFIED** | 4-step workflow, Story Universe Studio selector, Malaysian Comic Mode, Local Engine generation. |
-| `/characters` (Character Studio) | `200` | **VERIFIED** | Identity Lock, Species/Pose presets, editable Saved Versions & Outfit Library, Continuity Prompt copy. |
-| `/story-universe` & `/story-bible` (Story Universe Studio) | `200` | **VERIFIED & FIXED** | Unified **Story Universe Studio** terminology across UI; legacy `/story-bible` route preserved alongside `/story-universe` alias. |
-| `/director` (Smart Panel Director) | `200` | **VERIFIED** | Episode/scene/panel controls, camera/shot/composition, revision history & restore, continuity warnings. |
-| `/package-studio` (Prompt Package Studio) | `200` | **VERIFIED** | 11-part + preset guidance package, ChatGPT/Gemini presets, quality validator, TXT/JSON export. |
-| `/prompts` (Prompt Library) | `200` | **VERIFIED** | Search, filter, copy, export saved prompts. |
-| `/projects` (My Projects) | `200` | **VERIFIED** | Create, edit, duplicate, archive, delete (preserves shared characters), continue work. |
-| `/settings` (Settings) | `200` | **VERIFIED** | Language (BM/EN), theme (dark/light), default engine/style/ratio/target, Vercel API key placement guide. |
-| `/auth` (Account & Auth) | `200` | **VERIFIED (UI) / BLOCKED (Live Cloud)** | Show/hide password, confirm password, forgot password & recovery UI verified; live Supabase Auth blocked by missing VM credentials. |
+Tested all **11 routes** (`/`, `/creator`, `/characters`, `/story-universe`, `/story-bible`, `/director`, `/package-studio`, `/prompts`, `/projects`, `/settings`, `/auth`) across **7 viewport widths** (`320px`, `375px`, `390px`, `430px`, `768px`, `1024px`, `1440px` — **77 page loads total**):
 
-## Accessibility & Mobile Responsiveness
+- **Horizontal Overflow (`scrollWidth > clientWidth`):** **0 issues** (**VERIFIED**)
+- **Legacy `"Story Bible"` Visible Text Hits:** **0 hits** (**VERIFIED**)
+- **Console Errors / Runtime Exceptions (`pageerror`):** **0 errors** (**VERIFIED**)
+- **HTTP 4xx/5xx Failed Requests:** **0** (only aborted Next.js background RSC prefetches on rapid navigation) (**VERIFIED**)
 
-- **Keyboard Focus Management:** **FIXED** — `ConfirmDialog` (`src/components/ui/primitives.tsx`) and mobile drawer (`src/components/layout/app-shell.tsx`) now trap `Tab`/`Shift+Tab` focus, set `aria-modal="true"`, mark background content `aria-hidden` while drawer is open, close on `Escape` or backdrop click, and restore focus to the triggering element on close.
-- **Touch Targets & Safe Areas:** **VERIFIED** — Primary buttons, inputs, selects, and mobile bottom navigation items enforce `min-h-[44px]` on mobile and `env(safe-area-inset-bottom)` padding.
-- **Interactive Browser Viewport Matrix (`320px`, `375px`, `390px`, `430px`, `768px`, `1024px`, `1440px`):** **NOT TESTED** in headless Playwright (Playwright npm package is not installed in the project; structural CSS/Tailwind responsive classes and `max-w-full` / `min-w-0` containers were audited via code review and production build).
+## Workflow & Accessibility Verification
+
+| Workflow / Control | Status | Evidence |
+| :--- | :--- | :--- |
+| Mobile Drawer Focus Trap & `Escape` (`375px`) | **VERIFIED** | Opening drawer moves focus to `"Close navigation"`; `Tab` stays trapped inside drawer; `Escape` closes drawer and restores focus to `"Open navigation"`. |
+| Character Save, Version Edit, Reload & Reopen | **VERIFIED** | Created `"Test Hero P15"`, added & edited version `"Arc 2 P15 Verified"`, saved, reloaded page, reopened via Edit button — persisted intact. |
+| Creator Local Engine, Save, Reload & Reopen | **VERIFIED** | Generated `"Phase 1.5 Smoke Comic"` via Local Engine, saved project, reloaded `/projects`, reopened in `/creator?projectId=...` with `PANEL 1` visible. |
+| `ConfirmDialog` `Escape` & Focus Restoration | **VERIFIED** | Triggered Delete dialog on `/projects` (after **FIXING** missing `aria-label` on icon-only Delete button in `src/app/projects/page.tsx`), pressed `Escape` — dialog closed without deleting project. |
+| `/story-universe` & `/story-bible` | **VERIFIED** | Both routes render `Story Universe Studio` heading and work identically. |
+| Live Supabase Auth / Gemini API | **BLOCKED** | No VM credentials (`geminiConfigured: false`, `supabaseConfigured: false`). |
