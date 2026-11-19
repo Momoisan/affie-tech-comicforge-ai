@@ -110,7 +110,7 @@ export default function StoryBiblePage() {
     };
     saveWorld(toSave);
     setWorld(toSave);
-    notify(isMs ? `Dunia & Lore "${toSave.worldName}" disimpan!` : `World Lore "${toSave.worldName}" saved!`, 'success');
+    notify(isMs ? `Story Universe "${toSave.worldName}" disimpan!` : `Story Universe "${toSave.worldName}" saved!`, 'success');
   };
 
   const addRule = () => {
@@ -185,13 +185,11 @@ export default function StoryBiblePage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="-skew-x-6 bg-[#FACC15] text-[#090D1A] px-2.5 py-0.5 text-xs font-black uppercase border-2 border-[#090D1A]">
-              V2.0 WORLD LORE
+              V2.0 STORY UNIVERSE STUDIO
             </span>
             <Badge variant="cyan">World &amp; Continuity Engine</Badge>
           </div>
-          <h1 className="text-2xl font-extrabold tracking-tight">
-            {isMs ? 'Dunia & Lore (World Builder)' : 'World Lore & Builder'}
-          </h1>
+          <h1 className="text-2xl font-extrabold tracking-tight">Story Universe Studio</h1>
           <p className="text-sm text-[var(--cf-muted)]">
             {isMs
               ? 'Pangkalan data kesinambungan dunia, peraturan, lokasi, puak dan garis masa komik anda.'
@@ -205,7 +203,7 @@ export default function StoryBiblePage() {
           </Button>
           <Button onClick={() => handleSaveWorld()}>
             <Sparkles className="w-4 h-4" />
-            {isMs ? 'Simpan Dunia & Lore' : 'Save World Lore'}
+            {isMs ? 'Simpan Story Universe' : 'Save Story Universe'}
           </Button>
         </div>
       </div>
@@ -400,7 +398,7 @@ export default function StoryBiblePage() {
                 onClick={() => {
                   deleteWorld(world.id);
                   setWorld(createBlankWorld());
-                  notify(isMs ? 'Dunia & Lore dipadam.' : 'World Lore deleted.', 'default');
+                  notify(isMs ? 'Story Universe dipadam.' : 'Story Universe deleted.', 'default');
                 }}
               >
                 <Trash2 className="w-3.5 h-3.5" /> Delete World

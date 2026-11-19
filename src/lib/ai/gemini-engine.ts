@@ -113,7 +113,7 @@ export async function generateWithGeminiEngine(
 
   const worldRulesText =
     worldRules && worldRules.length > 0
-      ? `Immutable Story Bible World Rules${worldName ? ` (${sanitizeUserText(worldName, 100)})` : ''}: ${worldRules.map((r) => sanitizeUserText(r, 200)).join(' | ')}.`
+      ? `Immutable Story Universe Studio World Rules${worldName ? ` (${sanitizeUserText(worldName, 100)})` : ''}: ${worldRules.map((r) => sanitizeUserText(r, 200)).join(' | ')}.`
       : '';
 
   const systemInstruction = [

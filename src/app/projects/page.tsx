@@ -121,6 +121,8 @@ export default function MyProjectsPage() {
                 <Button
                   size="sm"
                   variant="ghost"
+                  aria-label={t.actions.delete}
+                  title={t.actions.delete}
                   onClick={() => setDeleteTargetId(proj.id)}
                 >
                   <Trash2 className="w-3.5 h-3.5 text-rose-400" />
