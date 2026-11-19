@@ -111,25 +111,33 @@ export function ComicForgeProvider({ children }: { children: React.ReactNode }) 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   useEffect(() => {
-    setProjects(safeReadStorage<ComicProject[]>(STORAGE_KEYS.projects, []));
-    setCharacters(safeReadStorage<CharacterProfile[]>(STORAGE_KEYS.characters, []));
-    setPrompts(safeReadStorage<SavedPrompt[]>(STORAGE_KEYS.prompts, []));
-    setWorlds(safeReadStorage<StoryWorld[]>(STORAGE_KEYS.worlds, []));
-    setPromptPackages(safeReadStorage<PromptPackage[]>(STORAGE_KEYS.packages, []));
-    setPreferences({
-      ...DEFAULT_PREFERENCES,
-      ...safeReadStorage<Partial<UserPreferences>>(STORAGE_KEYS.preferences, {}),
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      setProjects(safeReadStorage<ComicProject[]>(STORAGE_KEYS.projects, []));
+      setCharacters(safeReadStorage<CharacterProfile[]>(STORAGE_KEYS.characters, []));
+      setPrompts(safeReadStorage<SavedPrompt[]>(STORAGE_KEYS.prompts, []));
+      setWorlds(safeReadStorage<StoryWorld[]>(STORAGE_KEYS.worlds, []));
+      setPromptPackages(safeReadStorage<PromptPackage[]>(STORAGE_KEYS.packages, []));
+      setPreferences({
+        ...DEFAULT_PREFERENCES,
+        ...safeReadStorage<Partial<UserPreferences>>(STORAGE_KEYS.preferences, {}),
+      });
+      setHydrated(true);
     });
-    setHydrated(true);
 
     fetch('/api/health')
       .then((res) => (res.ok ? res.json() : null))
       .then((data: EngineStatusSummary | null) => {
-        if (data) setEngineStatus(data);
+        if (active && data) setEngineStatus(data);
       })
       .catch(() => {
         // Keep null if offline
       });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   // Sync theme class on <html>

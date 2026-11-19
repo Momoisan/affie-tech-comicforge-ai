@@ -3,7 +3,6 @@ import type {
   CharacterProfile,
   ComicEpisode,
   ComicScene,
-  ExportTarget,
   GenerateComicRequest,
   StoryLanguage,
   StoryOutline,

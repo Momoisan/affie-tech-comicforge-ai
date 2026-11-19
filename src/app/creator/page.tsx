@@ -110,13 +110,18 @@ function ComicCreatorInner() {
   const [panelViewMode, setPanelViewMode] = useState<'human' | 'json'>('human');
 
   useEffect(() => {
-    if (projectIdParam) {
-      const existing = projects.find((p) => p.id === projectIdParam);
-      if (existing) {
-        setProject(existing);
-        if (existing.storyOutline) setStep(3);
-      }
-    }
+    if (!projectIdParam) return;
+    const existing = projects.find((p) => p.id === projectIdParam);
+    if (!existing) return;
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
+      setProject(existing);
+      if (existing.storyOutline) setStep(3);
+    });
+    return () => {
+      active = false;
+    };
   }, [projectIdParam, projects]);
 
   const activeCharacters = characters.filter((c) => c.status !== 'archived');
@@ -210,7 +215,7 @@ function ComicCreatorInner() {
           mode: 'full_story',
           engineMode,
           exportTarget,
-          seed: Date.now(),
+          seed: new Date().getTime(),
           project: {
             id: project.id,
             title: project.title.trim() || 'Untitled Comic',

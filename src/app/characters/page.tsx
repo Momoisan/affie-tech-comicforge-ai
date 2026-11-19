@@ -604,9 +604,11 @@ export default function CharacterStudioPage() {
                   </div>
                   {form.referenceImageUrl && (
                     <div className="mt-2 flex items-center gap-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- supports local data URLs and external Supabase Storage URLs */}
                       <img
                         src={form.referenceImageUrl}
                         alt={form.name || 'Character reference'}
+                        loading="lazy"
                         className="w-24 h-24 object-cover rounded-xl border border-[var(--cf-border)]"
                       />
                       <Button
@@ -870,11 +872,15 @@ export default function CharacterStudioPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3 min-w-0">
                       {char.referenceImageUrl ? (
-                        <img
-                          src={char.referenceImageUrl}
-                          alt={char.name}
-                          className="w-11 h-11 rounded-xl object-cover border border-[var(--cf-border)] shrink-0"
-                        />
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element -- supports local data URLs and external Supabase Storage URLs */}
+                          <img
+                            src={char.referenceImageUrl}
+                            alt={char.name}
+                            loading="lazy"
+                            className="w-11 h-11 rounded-xl object-cover border border-[var(--cf-border)] shrink-0"
+                          />
+                        </>
                       ) : (
                         <div className="w-11 h-11 rounded-xl bg-[#6366F1]/20 border border-[#6366F1]/40 flex items-center justify-center font-bold text-sm text-[#818CF8] shrink-0">
                           {char.name.slice(0, 2).toUpperCase() || 'CH'}

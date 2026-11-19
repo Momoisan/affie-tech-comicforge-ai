@@ -22,9 +22,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizes: Record<NonNullable<ButtonProps['size']>, string> = {
-      sm: 'h-8 px-3 text-xs rounded-lg',
-      md: 'h-10 px-4 text-sm rounded-xl',
-      lg: 'h-11 px-5 text-sm rounded-xl',
+      sm: 'min-h-[40px] sm:min-h-[34px] px-3 text-xs rounded-lg',
+      md: 'min-h-[44px] px-4 text-sm rounded-xl',
+      lg: 'min-h-[48px] px-5 text-sm rounded-xl',
     };
 
     return (
@@ -32,7 +32,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={type}
         className={cn(
-          'inline-flex items-center justify-center gap-2 transition-all duration-150 disabled:opacity-50 disabled:pointer-events-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00D9FF]',
+          'inline-flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.98] motion-reduce:transition-none disabled:opacity-50 disabled:pointer-events-none cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#00D9FF]',
           variants[variant],
           sizes[size],
           className
@@ -112,7 +112,7 @@ export const Input = React.forwardRef<
   <input
     ref={ref}
     className={cn(
-      'w-full h-10 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] px-3.5 text-sm text-[var(--cf-text)] placeholder:text-[var(--cf-muted)]/70 focus:outline-none focus:border-[#00D9FF] focus:ring-1 focus:ring-[#00D9FF]',
+      'w-full min-h-[44px] sm:min-h-[40px] rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] px-3.5 text-sm text-[var(--cf-text)] placeholder:text-[var(--cf-muted)]/70 focus:outline-none focus:border-[#00D9FF] focus:ring-1 focus:ring-[#00D9FF]',
       className
     )}
     {...props}
@@ -142,7 +142,7 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      'w-full h-10 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] px-3 text-sm text-[var(--cf-text)] focus:outline-none focus:border-[#00D9FF] focus:ring-1 focus:ring-[#00D9FF]',
+      'w-full min-h-[44px] sm:min-h-[40px] rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] px-3 text-sm text-[var(--cf-text)] focus:outline-none focus:border-[#00D9FF] focus:ring-1 focus:ring-[#00D9FF]',
       className
     )}
     {...props}
@@ -169,12 +169,24 @@ export function ConfirmDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  React.useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCancel();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [open, onCancel]);
+
   if (!open) return null;
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
     >
       <Card className="w-full max-w-md space-y-4">
         <h3 className="text-lg font-bold text-[var(--cf-text)]">{title}</h3>

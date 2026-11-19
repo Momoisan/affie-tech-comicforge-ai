@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -32,6 +32,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     useComicForge();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMobileOpen(false);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [mobileOpen]);
 
   const navItems = [
     { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
@@ -289,7 +298,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {/* Mobile Bottom Navigation Bar */}
         <nav
           aria-label="Mobile Quick Navigation"
-          className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--cf-border)] bg-[var(--cf-surface)]/95 backdrop-blur-lg flex items-center justify-around px-1 py-1"
+          className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--cf-border)] bg-[var(--cf-surface)]/95 backdrop-blur-lg flex items-center justify-around px-1 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))]"
         >
           {mobileBottomItems.map((item) => {
             const Icon = item.icon;
