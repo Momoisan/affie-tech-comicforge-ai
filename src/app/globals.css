@@ -117,3 +117,28 @@ body {
 .animate-comic-pop {
   animation: comicPopIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+@keyframes comicMarquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.comic-marquee-track {
+  display: flex;
+  width: max-content;
+  animation: comicMarquee 28s linear infinite;
+}
+
+.comic-marquee-wrap:hover .comic-marquee-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .comic-marquee-track {
+    animation: none;
+  }
+}

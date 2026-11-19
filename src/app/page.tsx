@@ -102,6 +102,57 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {/* Lightweight Comic Showcase Marquee (Read-only inspiration, does not alter user projects) */}
+      <section className="space-y-2.5">
+        <div className="flex items-center justify-between px-1">
+          <div className="flex items-center gap-2">
+            <span className="inline-block -skew-x-6 bg-[#00D9FF] text-[#090D1A] px-2.5 py-0.5 text-[11px] font-black uppercase border-2 border-[#090D1A]">
+              {preferences.uiLanguage === 'ms-MY' ? 'GALERI INSPIRASI' : 'SHOWCASE'}
+            </span>
+            <span className="text-xs text-[var(--cf-muted)]">
+              {preferences.uiLanguage === 'ms-MY'
+                ? 'Contoh komik ringan (hover untuk berhenti seketika)'
+                : 'Sample comic panels (hover to pause)'}
+            </span>
+          </div>
+        </div>
+        <div className="comic-marquee-wrap overflow-hidden rounded-2xl border-2 border-[var(--cf-border)] bg-[var(--cf-surface)]/70 py-3">
+          <div className="comic-marquee-track gap-4 px-4">
+            {[
+              { title: 'Bayang Kota Neon', style: 'Korean Webtoon', bubble: 'Jam ni bercahaya biru!', color: '#6366F1', accent: '#00D9FF' },
+              { title: 'Kopitiam Chaos', style: 'Malaysian Cartoon', bubble: 'Teh tarik satu, boss!', color: '#F59E0B', accent: '#FACC15' },
+              { title: 'Legenda Pulau Awan', style: 'Fantasy Manga', bubble: 'Gerbang purba terbuka!', color: '#10B981', accent: '#34D399' },
+              { title: 'Nota Bangku Belakang', style: 'School Webtoon', bubble: 'Siapa tulis nota ni?', color: '#EC4899', accent: '#F472B6' },
+              { title: 'Bayang Kota Neon', style: 'Korean Webtoon', bubble: 'Jam ni bercahaya biru!', color: '#6366F1', accent: '#00D9FF' },
+              { title: 'Kopitiam Chaos', style: 'Malaysian Cartoon', bubble: 'Teh tarik satu, boss!', color: '#F59E0B', accent: '#FACC15' },
+              { title: 'Legenda Pulau Awan', style: 'Fantasy Manga', bubble: 'Gerbang purba terbuka!', color: '#10B981', accent: '#34D399' },
+              { title: 'Nota Bangku Belakang', style: 'School Webtoon', bubble: 'Siapa tulis nota ni?', color: '#EC4899', accent: '#F472B6' },
+            ].map((item, idx) => (
+              <div
+                key={`${item.title}-${idx}`}
+                className="w-60 shrink-0 rounded-xl border-2 border-[var(--cf-border)] bg-[var(--cf-surface-2)] p-3 space-y-2 shadow-[3px_3px_0px_rgba(0,217,255,0.28)]"
+              >
+                <div className="h-20 rounded-lg relative overflow-hidden flex items-center justify-center border border-white/10" style={{ background: `linear-gradient(135deg, ${item.color}33, #090D1A)` }}>
+                  <svg viewBox="0 0 180 70" className="w-full h-full opacity-85" aria-hidden="true">
+                    <circle cx="38" cy="36" r="18" fill={item.accent} fillOpacity="0.28" stroke={item.accent} strokeWidth="2" />
+                    <path d="M26 56 Q38 42 50 56" fill="none" stroke={item.accent} strokeWidth="2.5" />
+                    <line x1="75" y1="16" x2="165" y2="16" stroke={item.accent} strokeWidth="1.5" strokeDasharray="4 3" />
+                    <line x1="85" y1="54" x2="170" y2="54" stroke="#FACC15" strokeWidth="1.5" strokeDasharray="6 4" />
+                  </svg>
+                  <span className="absolute bottom-1.5 right-1.5 comic-bubble px-2 py-0.5 text-[10px] font-bold">
+                    {item.bubble}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="font-bold text-xs truncate">{item.title}</span>
+                  <span className="text-[10px] text-[#00D9FF] font-semibold shrink-0">{item.style}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Stats + Quick Lists */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Recent Projects */}
