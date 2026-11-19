@@ -6,7 +6,7 @@
   --cf-bg: #f8fafc;
   --cf-surface: #ffffff;
   --cf-surface-2: #f1f5f9;
-  --cf-border: #cbd5e1;
+  --cf-border: #1e293b;
   --cf-text: #0f172a;
   --cf-muted: #475569;
   --cf-primary: #6366f1;
@@ -17,8 +17,8 @@
 .dark {
   --cf-bg: #090d1a;
   --cf-surface: #111827;
-  --cf-surface-2: #1a2234;
-  --cf-border: rgba(148, 163, 184, 0.16);
+  --cf-surface-2: #161f33;
+  --cf-border: rgba(0, 217, 255, 0.28);
   --cf-text: #f8fafc;
   --cf-muted: #94a3b8;
   --cf-primary: #6366f1;
@@ -30,31 +30,90 @@ body {
   background-color: var(--cf-bg);
   color: var(--cf-text);
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, sans-serif;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* Comic Halftone Dot Overlay */
+.halftone-bg {
+  background-image: radial-gradient(rgba(0, 217, 255, 0.14) 1.2px, transparent 1.2px);
+  background-size: 14px 14px;
+}
+
+.light .halftone-bg {
+  background-image: radial-gradient(rgba(99, 102, 241, 0.12) 1.2px, transparent 1.2px);
+  background-size: 14px 14px;
+}
+
+/* Comic Panel Card with crisp ink border + hard offset shadow */
 .glass-card {
-  background: color-mix(in srgb, var(--cf-surface) 88%, transparent);
+  background: color-mix(in srgb, var(--cf-surface) 92%, transparent);
   backdrop-filter: blur(12px);
-  border: 1px solid var(--cf-border);
+  border: 2px solid var(--cf-border);
+  box-shadow: 4px 4px 0px rgba(99, 102, 241, 0.35);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
 .dark .glass-card {
-  background: rgba(17, 24, 39, 0.78);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  background: rgba(17, 24, 39, 0.88);
+  border: 2px solid rgba(99, 102, 241, 0.45);
+  box-shadow: 5px 5px 0px rgba(0, 217, 255, 0.22);
 }
 
+.comic-hover:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 7px 7px 0px rgba(250, 204, 21, 0.55);
+  border-color: #facc15;
+}
+
+/* Comic Action Button */
 .cf-gradient-btn {
   background: linear-gradient(135deg, #6366f1 0%, #4f46e5 55%, #00d9ff 100%);
   color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 3px 3px 0px #00d9ff;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
 }
 
 .cf-gradient-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0px #facc15;
   filter: brightness(1.08);
+}
+
+.cf-gradient-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px #00d9ff;
 }
 
 .cf-selected-ring {
   border-color: #facc15 !important;
-  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.45);
+  box-shadow: 4px 4px 0px rgba(250, 204, 21, 0.65) !important;
+}
+
+/* Comic Speech Bubble */
+.comic-bubble {
+  position: relative;
+  background: #ffffff;
+  color: #090d1a;
+  border: 2px solid #090d1a;
+  box-shadow: 3px 3px 0px #00d9ff;
+  border-radius: 14px;
+}
+
+@keyframes comicPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(10px);
+  }
+  70% {
+    transform: scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-comic-pop {
+  animation: comicPopIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

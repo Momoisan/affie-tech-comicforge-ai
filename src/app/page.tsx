@@ -27,18 +27,21 @@ export default function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* Hero / Welcome */}
-      <section className="glass-card rounded-3xl p-6 sm:p-8 relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#6366F1]/20 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#00D9FF]/15 blur-3xl pointer-events-none" />
+      <section className="glass-card halftone-bg rounded-3xl p-6 sm:p-8 relative overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#6366F1]/25 blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#00D9FF]/20 blur-3xl pointer-events-none" />
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
           <div className="space-y-3 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="cyan">AFFIE TECH ComicForge AI V1.0</Badge>
+              <span className="inline-block -skew-x-6 bg-[#FACC15] text-[#090D1A] px-3 py-0.5 text-xs font-black uppercase tracking-wider border-2 border-[#090D1A]">
+                ISSUE #01 · V1.0
+              </span>
+              <Badge variant="cyan">AFFIE TECH ComicForge AI</Badge>
               <Badge variant="indigo">
                 {preferences.uiLanguage === 'ms-MY' ? 'Bahasa Melayu Malaysia' : 'English'}
               </Badge>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h1 className="text-2xl sm:text-4xl font-black tracking-tight uppercase">
               {t.dashboard.welcomeTitle}
             </h1>
             <p className="text-sm sm:text-base text-[var(--cf-muted)] leading-relaxed">

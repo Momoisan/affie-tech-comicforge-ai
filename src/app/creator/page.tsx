@@ -883,12 +883,17 @@ function ComicCreatorInner() {
                           return (
                             <div
                               key={`${sc.id}_p${panel.panel_number}`}
-                              className="rounded-2xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)]/80 p-4 space-y-3"
+                              className="rounded-2xl border-2 border-[#6366F1]/45 bg-[var(--cf-surface-2)]/90 p-4 space-y-3 animate-comic-pop halftone-bg shadow-[4px_4px_0px_rgba(0,217,255,0.22)]"
                             >
                               <div className="flex flex-wrap items-center justify-between gap-2">
-                                <span className="font-bold text-sm text-[#FACC15]">
-                                  Panel {panel.panel_number} — {panel.camera}
-                                </span>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="inline-block -skew-x-6 bg-[#FACC15] text-[#090D1A] px-2.5 py-0.5 text-xs font-black uppercase border-2 border-[#090D1A]">
+                                    PANEL {panel.panel_number}
+                                  </span>
+                                  <span className="text-xs font-bold text-[#00D9FF]">
+                                    {panel.camera} · {panel.lighting}
+                                  </span>
+                                </div>
                                 <div className="flex flex-wrap gap-1.5">
                                   <Button
                                     size="sm"
@@ -947,6 +952,17 @@ function ComicCreatorInner() {
                                   </Button>
                                 </div>
                               </div>
+
+                              {/* Comic Dialogue Speech Bubbles Preview */}
+                              {panel.dialogue.length > 0 && (
+                                <div className="flex flex-wrap gap-2.5 pt-1">
+                                  {panel.dialogue.map((d, idx) => (
+                                    <div key={idx} className="comic-bubble px-3 py-1.5 text-xs font-semibold">
+                                      <span className="font-black text-[#4F46E5]">{d.speaker}:</span> &ldquo;{d.text}&rdquo;
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
 
                               <Textarea
                                 rows={panelViewMode === 'human' ? 10 : 12}
