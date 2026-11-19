@@ -106,6 +106,8 @@ export default function CharacterStudioPage() {
   const [exportTarget, setExportTarget] = useState<ExportTarget>(preferences.exportTarget);
   const [generatingRef, setGeneratingRef] = useState(false);
   const [copiedRef, setCopiedRef] = useState(false);
+  const [editingVersionNumber, setEditingVersionNumber] = useState<number | null>(null);
+  const [editingOutfitId, setEditingOutfitId] = useState<string | null>(null);
 
   const filteredCharacters = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -797,28 +799,318 @@ export default function CharacterStudioPage() {
                   </div>
 
                   {(form.versions?.length ?? 0) > 0 && (
-                    <div className="space-y-1.5">
-                      <Label>Saved Versions ({form.versions?.length})</Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {form.versions?.map((v) => (
-                          <Badge key={v.versionNumber} variant="cyan">
-                            v{v.versionNumber}: {v.label} ({v.status})
-                          </Badge>
-                        ))}
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <Label className="mb-0">
+                          Saved Versions ({form.versions?.length}) —{' '}
+                          <span className="text-[#00D9FF] normal-case font-normal">
+                            Klik versi untuk sunting / aktifkan
+                          </span>
+                        </Label>
                       </div>
+                      <div className="flex flex-wrap gap-2">
+                        {form.versions?.map((v) => {
+                          const isSelected = editingVersionNumber === v.versionNumber;
+                          const isActive = form.version === v.versionNumber;
+                          return (
+                            <button
+                              key={v.versionNumber}
+                              type="button"
+                              onClick={() =>
+                                setEditingVersionNumber(isSelected ? null : v.versionNumber)
+                              }
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer min-h-[36px] ${
+                                isSelected
+                                  ? 'border-[#FACC15] bg-[#FACC15]/15 text-[#FACC15]'
+                                  : isActive
+                                    ? 'border-[#00D9FF] bg-[#00D9FF]/15 text-[#00D9FF]'
+                                    : 'border-[var(--cf-border)] bg-[var(--cf-surface)] text-[var(--cf-muted)] hover:text-[var(--cf-text)]'
+                              }`}
+                            >
+                              <span>
+                                v{v.versionNumber}: {v.label} ({v.status})
+                              </span>
+                              {isActive && (
+                                <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300">
+                                  Active
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {editingVersionNumber !== null && (() => {
+                        const targetVer = form.versions?.find(
+                          (v) => v.versionNumber === editingVersionNumber
+                        );
+                        if (!targetVer) return null;
+                        const updateVer = (
+                          patch: Partial<NonNullable<CharacterProfile['versions']>[number]>
+                        ) => {
+                          setForm((prev) => ({
+                            ...prev,
+                            versions: (prev.versions ?? []).map((item) =>
+                              item.versionNumber === targetVer.versionNumber
+                                ? { ...item, ...patch }
+                                : item
+                            ),
+                          }));
+                        };
+                        return (
+                          <div className="rounded-xl border border-[#FACC15]/40 bg-[var(--cf-surface)] p-3.5 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-[#FACC15]">
+                                Edit Version v{targetVer.versionNumber}
+                              </span>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={
+                                    form.version === targetVer.versionNumber
+                                      ? 'accent'
+                                      : 'secondary'
+                                  }
+                                  onClick={() => {
+                                    setForm((prev) => ({
+                                      ...prev,
+                                      version: targetVer.versionNumber,
+                                      ageRange: targetVer.ageRange || prev.ageRange,
+                                      primaryOutfit: targetVer.outfitName || prev.primaryOutfit,
+                                      hairStyle: targetVer.hairStyle || prev.hairStyle,
+                                      accessories: targetVer.equipment || prev.accessories,
+                                    }));
+                                    notify(
+                                      `Versi v${targetVer.versionNumber} diaktifkan pada watak!`,
+                                      'success'
+                                    );
+                                  }}
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  {form.version === targetVer.versionNumber
+                                    ? 'Active Version'
+                                    : 'Set as Active'}
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="danger"
+                                  onClick={() => {
+                                    const remaining = (form.versions ?? []).filter(
+                                      (item) => item.versionNumber !== targetVer.versionNumber
+                                    );
+                                    setForm((prev) => ({
+                                      ...prev,
+                                      versions: remaining,
+                                      version:
+                                        prev.version === targetVer.versionNumber
+                                          ? remaining[remaining.length - 1]?.versionNumber ?? 1
+                                          : prev.version,
+                                    }));
+                                    setEditingVersionNumber(null);
+                                    notify(`Versi v${targetVer.versionNumber} dipadam.`, 'default');
+                                  }}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Padam
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <Label>Version Label</Label>
+                                <Input
+                                  value={targetVer.label}
+                                  onChange={(e) => updateVer({ label: e.target.value })}
+                                  placeholder="cth: Arc 2 — Academy Uniform"
+                                />
+                              </div>
+                              <div>
+                                <Label>Status</Label>
+                                <Select
+                                  value={targetVer.status}
+                                  onChange={(e) =>
+                                    updateVer({
+                                      status: e.target.value as
+                                        | 'active'
+                                        | 'injured'
+                                        | 'deceased'
+                                        | 'missing',
+                                    })
+                                  }
+                                >
+                                  <option value="active">active</option>
+                                  <option value="injured">injured</option>
+                                  <option value="deceased">deceased</option>
+                                  <option value="missing">missing</option>
+                                </Select>
+                              </div>
+                              <div>
+                                <Label>Age Range</Label>
+                                <Input
+                                  value={targetVer.ageRange}
+                                  onChange={(e) => updateVer({ ageRange: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <Label>Outfit Name</Label>
+                                <Input
+                                  value={targetVer.outfitName}
+                                  onChange={(e) => updateVer({ outfitName: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <Label>Hair Style</Label>
+                                <Input
+                                  value={targetVer.hairStyle}
+                                  onChange={(e) => updateVer({ hairStyle: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <Label>Equipment / Accessories</Label>
+                                <Input
+                                  value={targetVer.equipment}
+                                  onChange={(e) => updateVer({ equipment: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <Label>Physical Condition</Label>
+                                <Input
+                                  value={targetVer.physicalCondition}
+                                  onChange={(e) =>
+                                    updateVer({ physicalCondition: e.target.value })
+                                  }
+                                />
+                              </div>
+                              <div>
+                                <Label>Notes</Label>
+                                <Input
+                                  value={targetVer.notes}
+                                  onChange={(e) => updateVer({ notes: e.target.value })}
+                                  placeholder="Nota kesinambungan versi ini..."
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
 
                   {(form.outfits?.length ?? 0) > 0 && (
-                    <div className="space-y-1.5">
-                      <Label>Outfit Library ({form.outfits?.length})</Label>
-                      <div className="flex flex-wrap gap-1.5">
-                        {form.outfits?.map((o) => (
-                          <Badge key={o.id} variant="yellow">
-                            {o.name}: {o.description.slice(0, 32)}
-                          </Badge>
-                        ))}
+                    <div className="space-y-2.5">
+                      <Label className="mb-0">
+                        Outfit Library ({form.outfits?.length}) —{' '}
+                        <span className="text-[#00D9FF] normal-case font-normal">
+                          Klik pakaian untuk sunting / guna
+                        </span>
+                      </Label>
+                      <div className="flex flex-wrap gap-2">
+                        {form.outfits?.map((o) => {
+                          const isSelected = editingOutfitId === o.id;
+                          return (
+                            <button
+                              key={o.id}
+                              type="button"
+                              onClick={() => setEditingOutfitId(isSelected ? null : o.id)}
+                              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer min-h-[36px] ${
+                                isSelected
+                                  ? 'border-[#FACC15] bg-[#FACC15]/20 text-[#FACC15]'
+                                  : 'border-[#FACC15]/40 bg-[#FACC15]/10 text-[#FACC15] hover:bg-[#FACC15]/20'
+                              }`}
+                            >
+                              {o.name}: {o.description.slice(0, 32)}
+                            </button>
+                          );
+                        })}
                       </div>
+
+                      {editingOutfitId && (() => {
+                        const targetOutfit = form.outfits?.find((o) => o.id === editingOutfitId);
+                        if (!targetOutfit) return null;
+                        const updateOutfit = (
+                          patch: Partial<NonNullable<CharacterProfile['outfits']>[number]>
+                        ) => {
+                          setForm((prev) => ({
+                            ...prev,
+                            outfits: (prev.outfits ?? []).map((item) =>
+                              item.id === targetOutfit.id ? { ...item, ...patch } : item
+                            ),
+                          }));
+                        };
+                        return (
+                          <div className="rounded-xl border border-[#FACC15]/40 bg-[var(--cf-surface)] p-3.5 space-y-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <span className="text-xs font-bold text-[#FACC15]">
+                                Edit Outfit: {targetOutfit.name}
+                              </span>
+                              <div className="flex flex-wrap gap-2">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => {
+                                    setForm((prev) => ({
+                                      ...prev,
+                                      primaryOutfit: targetOutfit.description,
+                                      outfitColors: targetOutfit.colors,
+                                      accessories: targetOutfit.accessories,
+                                      footwear: targetOutfit.footwear,
+                                    }));
+                                    notify(
+                                      `Pakaian "${targetOutfit.name}" digunakan sebagai Primary Outfit!`,
+                                      'success'
+                                    );
+                                  }}
+                                >
+                                  <Check className="w-3.5 h-3.5" /> Apply to Primary
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="danger"
+                                  onClick={() => {
+                                    setForm((prev) => ({
+                                      ...prev,
+                                      outfits: (prev.outfits ?? []).filter(
+                                        (item) => item.id !== targetOutfit.id
+                                      ),
+                                    }));
+                                    setEditingOutfitId(null);
+                                    notify(`"${targetOutfit.name}" dipadam.`, 'default');
+                                  }}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" /> Padam
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div>
+                                <Label>Outfit Name</Label>
+                                <Input
+                                  value={targetOutfit.name}
+                                  onChange={(e) => updateOutfit({ name: e.target.value })}
+                                />
+                              </div>
+                              <div>
+                                <Label>Colors</Label>
+                                <Input
+                                  value={targetOutfit.colors}
+                                  onChange={(e) => updateOutfit({ colors: e.target.value })}
+                                />
+                              </div>
+                              <div className="sm:col-span-2">
+                                <Label>Description</Label>
+                                <Input
+                                  value={targetOutfit.description}
+                                  onChange={(e) => updateOutfit({ description: e.target.value })}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                 </div>
