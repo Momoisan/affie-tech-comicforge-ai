@@ -160,6 +160,19 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        <div className="rounded-xl bg-[var(--cf-surface-2)] p-4 border border-[#00D9FF]/30 text-xs space-y-1.5">
+          <div className="font-bold text-[#00D9FF]">
+            {preferences.uiLanguage === 'ms-MY'
+              ? 'Di mana nak letak API Key (Gemini & Supabase)?'
+              : 'Where to configure API Keys (Gemini & Supabase)?'}
+          </div>
+          <p className="text-[var(--cf-muted)] leading-relaxed">
+            {preferences.uiLanguage === 'ms-MY'
+              ? 'Demi keselamatan, kunci API tidak dimasukkan melalui borang web. Buka Vercel Dashboard → Project → Settings → Environment Variables dan tambah: GEMINI_API_KEY (untuk enjin Gemini), NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY (untuk akaun & simpanan awan), kemudian Redeploy.'
+              : 'For security, API keys are configured server-side rather than in the browser. Open Vercel Dashboard → Project → Settings → Environment Variables and add GEMINI_API_KEY, NEXT_PUBLIC_SUPABASE_URL, and NEXT_PUBLIC_SUPABASE_ANON_KEY, then Redeploy.'}
+          </p>
+        </div>
       </Card>
     </div>
   );
