@@ -197,10 +197,8 @@ export default function CharacterStudioPage() {
     if (!form.role.trim()) {
       errs.role = isMs ? 'Peranan watak wajib diisi.' : 'Character Role is required.';
     }
-    if (!form.species?.trim()) {
-      errs.species = isMs ? 'Sila pilih spesies watak.' : 'Please select a species.';
-    }
-    if (form.species === 'Custom Species' && !form.customSpecies?.trim()) {
+    const resolvedSpecies = form.species?.trim() || 'Human';
+    if (resolvedSpecies === 'Custom Species' && !form.customSpecies?.trim()) {
       errs.customSpecies = isMs
         ? 'Sila nyatakan nama spesies tersuai.'
         : 'Please enter your custom species name.';
@@ -208,28 +206,74 @@ export default function CharacterStudioPage() {
     setValidationErrors(errs);
     if (Object.keys(errs).length > 0) {
       if (errs.name || errs.role) setStepIdx(0);
-      else if (errs.species || errs.customSpecies) setStepIdx(1);
+      else if (errs.customSpecies) setStepIdx(1);
       notify(Object.values(errs)[0], 'error');
       return false;
     }
     return true;
   };
 
-  const commitSaveCharacter = () => {
+  const commitSaveCharacter = (isIdentityRevision = false) => {
     const now = new Date().toISOString();
     const isDraft = form.id.startsWith('char_draft_');
-    const canonical = buildCanonicalIdentityBlock(form);
-    const continuity = buildCharacterContinuityPrompt(form, form.version);
-    const prepared: CharacterProfile = {
+    let nextVersion = form.version;
+    let nextVersions = [...(form.versions ?? [])];
+
+    if (isIdentityRevision) {
+      const original = characters.find((c) => c.id === form.id);
+      if (nextVersions.length === 0 && original) {
+        nextVersions.push({
+          versionNumber: original.version || 1,
+          label: 'Base Version',
+          ageRange: original.ageRange,
+          outfitName: original.primaryOutfit || 'Signature Outfit',
+          hairStyle: original.hairStyle,
+          equipment: original.accessories,
+          physicalCondition: 'Healthy',
+          status: 'active',
+          notes: 'Snapshot prior to identity revision',
+          createdAt: original.updatedAt || original.createdAt || now,
+        });
+      }
+      const maxVer = nextVersions.reduce(
+        (max, v) => Math.max(max, v.versionNumber),
+        form.version || 1
+      );
+      nextVersion = maxVer + 1;
+      nextVersions = [
+        ...nextVersions,
+        {
+          versionNumber: nextVersion,
+          label: `Identity Revision v${nextVersion}`,
+          ageRange: form.ageRange,
+          outfitName: form.primaryOutfit || 'Signature Outfit',
+          hairStyle: form.hairStyle,
+          equipment: form.accessories,
+          physicalCondition: 'Healthy',
+          status: 'active',
+          notes: `Confirmed revision (${getEffectiveSpecies(form)}, ${form.faceShape})`,
+          createdAt: now,
+        },
+      ];
+    }
+
+    const updatedForm = {
       ...form,
-      id: isDraft ? generateId('char') : form.id,
-      name: form.name.trim(),
-      role: form.role.trim(),
-      createdAt: form.createdAt || now,
+      version: nextVersion,
+      versions: nextVersions.length > 0 ? nextVersions : form.versions,
+    };
+    const canonical = buildCanonicalIdentityBlock(updatedForm);
+    const continuity = buildCharacterContinuityPrompt(updatedForm, nextVersion);
+    const prepared: CharacterProfile = {
+      ...updatedForm,
+      id: isDraft ? generateId('char') : updatedForm.id,
+      name: updatedForm.name.trim(),
+      role: updatedForm.role.trim(),
+      createdAt: updatedForm.createdAt || now,
       updatedAt: now,
       continuityPrompt: continuity,
       identityLock: {
-        ...form.identityLock,
+        ...updatedForm.identityLock,
         canonicalIdentityBlock: canonical,
       },
     };
@@ -238,8 +282,8 @@ export default function CharacterStudioPage() {
     setConfirmIdentityRevision(false);
     notify(
       isMs
-        ? `Watak "${prepared.name}" (${prepared.characterCode}) berjaya disimpan!`
-        : `Character "${prepared.name}" (${prepared.characterCode}) saved!`,
+        ? `Watak "${prepared.name}" (${prepared.characterCode}) v${prepared.version} berjaya disimpan!`
+        : `Character "${prepared.name}" (${prepared.characterCode}) v${prepared.version} saved!`,
       'success'
     );
   };
@@ -1873,7 +1917,7 @@ export default function CharacterStudioPage() {
         confirmLabel={t.actions.confirm}
         cancelLabel={t.actions.cancel}
         onCancel={() => setConfirmIdentityRevision(false)}
-        onConfirm={commitSaveCharacter}
+        onConfirm={() => commitSaveCharacter(true)}
       />
     </div>
   );
