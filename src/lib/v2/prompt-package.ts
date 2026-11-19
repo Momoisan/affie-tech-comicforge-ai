@@ -8,7 +8,11 @@ import type {
   StoryWorld,
   StructuredPanel,
 } from '@/types/comicforge';
-import { buildCanonicalIdentityBlock } from '@/lib/ai/prompt-formatter';
+import {
+  buildCanonicalIdentityBlock,
+  buildSpeciesTraitsSummary,
+  getEffectiveSpecies,
+} from '@/lib/ai/prompt-formatter';
 import { getArtStylePromptBlock, getTargetPresetNote } from '@/lib/styles/art-styles';
 import { generateId } from '@/lib/utils';
 
@@ -18,21 +22,27 @@ export function buildCharacterContinuityPrompt(
 ): string {
   const canonical = buildCanonicalIdentityBlock(character);
   const activeVer = character.versions?.find((v) => v.versionNumber === versionNumber);
-  const speciesText =
-    character.species === 'Custom Species' && character.customSpecies
-      ? character.customSpecies
-      : character.species || 'Human';
+  const speciesText = getEffectiveSpecies(character);
+  const speciesTraits = buildSpeciesTraitsSummary(character);
+  const styleName =
+    character.visualStyle === 'Custom' && character.customVisualStyle
+      ? character.customVisualStyle
+      : character.visualStyle;
 
   return [
     `CHARACTER CONTINUITY INSTRUCTION — ${character.name.toUpperCase()} (${character.characterCode})`,
-    `SPECIES / ORIGIN: ${speciesText} · ${character.nationality}`,
+    `SPECIES / ORIGIN: ${speciesText}${character.nationality ? ` · ${character.nationality}` : ''}`,
+    ...(speciesTraits.length > 0
+      ? [`SPECIES-SPECIFIC FEATURES: ${speciesTraits.join(', ')}`]
+      : []),
+    `VISUAL STYLE ANCHOR: ${styleName}`,
     `CANONICAL IDENTITY (IMMUTABLE): ${canonical}`,
     activeVer
       ? `ACTIVE VERSION: v${activeVer.versionNumber} (${activeVer.label}) — Age: ${activeVer.ageRange}, Outfit: ${activeVer.outfitName}, Hair: ${activeVer.hairStyle || character.hairStyle}, Equipment: ${activeVer.equipment || 'Standard'}, Condition: ${activeVer.physicalCondition}, Status: ${activeVer.status}.`
-      : `ACTIVE VERSION: v${character.version} — Outfit: ${character.primaryOutfit || 'Signature attire'}`,
+      : `ACTIVE VERSION: v${character.version} — Outfit: ${character.primaryOutfit || 'Signature attire'}${character.signatureItem ? `, Signature Item: ${character.signatureItem}` : ''}`,
     `POSE / EXPRESSION DEFAULT: ${character.defaultPose || 'Standing'} · ${character.defaultExpression}`,
-    `REFERENCE USAGE: Attach this character's reference image in ChatGPT Images or Google Gemini where supported. Note: External AI memory and exact face reproduction depend on the external provider and are not guaranteed.`,
-    `PERMITTED SCENE CHANGES ONLY: Facial expression, camera angle, lighting, pose, and environment.`,
+    `REFERENCE USAGE: Attach this character's reference image in ChatGPT Images or Google Gemini where supported. Note: External AI models do not guarantee 100% identical reproduction across generations.`,
+    `MUTABLE ATTRIBUTES (PERMITTED SCENE CHANGES ONLY): Clothing variations, accessories, facial expression, camera angle, lighting, pose, scene environment, and temporary conditions.`,
   ].join('\n');
 }
 

@@ -9,14 +9,44 @@ import { getArtStylePromptBlock, getTargetPresetNote } from '@/lib/styles/art-st
  * Builds the canonical Character Identity Block separating immutable identity
  * traits from mutable scene properties.
  */
+export function getEffectiveSpecies(character: CharacterProfile): string {
+  if (character.species === 'Custom Species' && character.customSpecies?.trim()) {
+    return character.customSpecies.trim();
+  }
+  return character.species || 'Human';
+}
+
+export function buildSpeciesTraitsSummary(character: CharacterProfile): string[] {
+  const st = character.speciesTraits;
+  if (!st) return [];
+  const entries: [string, string | undefined][] = [
+    ['horns', st.horns],
+    ['wings', st.wings],
+    ['tail', st.tail],
+    ['ears', st.ears],
+    ['scales', st.scales],
+    ['fur', st.fur],
+    ['slime body', st.slimeBody],
+    ['mechanical parts', st.mechanicalParts],
+    ['custom anatomy', st.customAnatomy],
+  ];
+  return entries
+    .filter(([, val]) => Boolean(val && val.trim()))
+    .map(([label, val]) => `${label}: ${val!.trim()}`);
+}
+
 export function buildCanonicalIdentityBlock(character: CharacterProfile): string {
   const lock = character.identityLock;
   const parts: string[] = [];
+  const speciesLabel = getEffectiveSpecies(character);
 
   if (lock.lockNameAndId) {
-    parts.push(`[${character.characterCode}] ${character.name} (${character.ageRange}, ${character.genderIdentity}, ${character.nationality})`);
+    const meta = [speciesLabel, character.ageRange, character.genderIdentity, character.nationality]
+      .filter((v) => Boolean(v && v.trim()))
+      .join(', ');
+    parts.push(`[${character.characterCode}] ${character.name} (${meta})`);
   } else {
-    parts.push(character.name);
+    parts.push(`${character.name} (${speciesLabel})`);
   }
 
   const immutableTraits: string[] = [];
@@ -27,13 +57,17 @@ export function buildCanonicalIdentityBlock(character: CharacterProfile): string
     immutableTraits.push(`${character.eyeColor} eye color`);
   }
   if (lock.lockSkinTone) {
-    immutableTraits.push(`${character.skinTone} skin tone`);
+    immutableTraits.push(`${character.skinTone} skin/surface tone`);
   }
-  if (lock.lockHair) {
+  if (lock.lockHair && character.hairStyle && character.hairStyle !== 'None') {
     immutableTraits.push(`${character.hairStyle} (${character.hairColor})`);
   }
   if (lock.lockDistinguishingFeatures && character.distinguishingFeatures && character.distinguishingFeatures !== 'None') {
     immutableTraits.push(`distinguishing features: ${character.distinguishingFeatures}`);
+  }
+  const speciesTraits = buildSpeciesTraitsSummary(character);
+  if (speciesTraits.length > 0) {
+    immutableTraits.push(`species traits (${speciesTraits.join(', ')})`);
   }
 
   if (immutableTraits.length > 0) {
@@ -46,6 +80,9 @@ export function buildCanonicalIdentityBlock(character: CharacterProfile): string
   }
   if (lock.lockAccessories && character.accessories) {
     outfitParts.push(`accessories: ${character.accessories}`);
+  }
+  if (character.signatureItem?.trim()) {
+    outfitParts.push(`signature item: ${character.signatureItem.trim()}`);
   }
   if (character.footwear) {
     outfitParts.push(`footwear: ${character.footwear}`);
@@ -73,6 +110,8 @@ export function buildCharacterReferencePrompt(
   exportTarget: ExportTarget = 'chatgpt'
 ): string {
   const canonical = buildCanonicalIdentityBlock(character);
+  const speciesLabel = getEffectiveSpecies(character);
+  const speciesTraits = buildSpeciesTraitsSummary(character);
   const styleLabel =
     character.visualStyle === 'Custom' && character.customVisualStyle
       ? character.customVisualStyle
@@ -84,24 +123,28 @@ export function buildCharacterReferencePrompt(
 
   return [
     `CHARACTER REFERENCE SHEET — ${character.name.toUpperCase()} (${character.characterCode})`,
+    `SPECIES: ${speciesLabel}${speciesTraits.length > 0 ? ` | SPECIES FEATURES: ${speciesTraits.join(', ')}` : ''}`,
     `TARGET MODEL PRESET: ${exportTarget === 'chatgpt' ? 'ChatGPT Images' : 'Google Gemini Image Generation'}`,
     `NOTE: ${getTargetPresetNote(exportTarget)}`,
     '',
     'CANONICAL IDENTITY BLOCK (IMMUTABLE TRAITS):',
     canonical,
     '',
+    'MUTABLE ATTRIBUTES (CAN VARY PER SCENE):',
+    `Pose (${character.defaultPose || 'Standing'}), facial expression (default: ${expr}), lighting, scene environment, and alternate/temporary outfits.`,
+    '',
     'SHEET LAYOUT REQUIREMENTS:',
     '- Clean neutral studio background (#F3F4F6 or soft light gray) with crisp layout spacing.',
     '- Include 4 full-character views side-by-side: (1) Front view, (2) Three-quarter view, (3) Side profile view, (4) Full-body standing pose.',
     '- Include a row of 4 facial expression headshots at the bottom: Neutral, Happy, Angry, Shocked (plus default expression: ' + expr + ').',
-    '- Maintain 100% consistent clothing, outfit colors, accessories, hair silhouette, and facial proportions across all views.',
+    '- Maintain consistent clothing, outfit colors, accessories, species anatomy, and proportions across all views (note: external AI models may still vary details slightly).',
     '- Clear, readable, model-sheet quality with no overlapping limbs or text clutter.',
     '',
     'IMAGE PROMPT:',
-    `Professional ${styleLabel} character reference sheet of ${character.name}, ${character.ageRange} ${character.nationality} ${character.role}. ${canonical}. Multiple views on one clean sheet: front view, three-quarter view, side profile view, and full-body view showing footwear (${character.footwear || 'matching shoes'}), plus 4 facial expression insets (neutral, happy, angry, shocked). Crisp linework, flat even studio lighting, accurate proportions, consistent outfit and accessories across every pose.`,
+    `Professional ${styleLabel} character reference sheet of ${character.name}, a ${speciesLabel} (${character.role}). ${canonical}. Multiple views on one clean sheet: front view, three-quarter view, side profile view, and full-body view showing footwear (${character.footwear || 'matching footwear'}), plus 4 facial expression insets (neutral, happy, angry, shocked). Crisp linework, flat even studio lighting, accurate proportions, consistent outfit and accessories across every pose.`,
     '',
     'NEGATIVE PROMPT:',
-    'inconsistent face between views, changing outfit, extra limbs, extra fingers, cropped head, cluttered background, watermark, blurry text, photorealistic distortion',
+    'inconsistent face or anatomy between views, changing outfit, extra limbs, extra fingers, cropped head, cluttered background, watermark, blurry text, photorealistic distortion',
   ].join('\n');
 }
 
