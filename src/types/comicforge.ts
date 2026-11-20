@@ -180,6 +180,26 @@ export const CharacterProfileSchema = z.object({
   customSpecies: z.string().max(120).optional(),
   defaultPose: z.string().max(80).optional(),
   continuityPrompt: z.string().optional(),
+  // Phase 2A Visual Character Studio 2.0 Extensions (all optional for full compatibility)
+  signatureItem: z.string().max(200).optional(),
+  motivations: z.string().max(400).optional(),
+  strengths: z.string().max(400).optional(),
+  weaknesses: z.string().max(400).optional(),
+  relationships: z.string().max(500).optional(),
+  speakingStyle: z.string().max(240).optional(),
+  speciesTraits: z
+    .object({
+      horns: z.string().max(160).optional(),
+      wings: z.string().max(160).optional(),
+      tail: z.string().max(160).optional(),
+      ears: z.string().max(160).optional(),
+      scales: z.string().max(160).optional(),
+      fur: z.string().max(160).optional(),
+      slimeBody: z.string().max(160).optional(),
+      mechanicalParts: z.string().max(160).optional(),
+      customAnatomy: z.string().max(240).optional(),
+    })
+    .optional(),
   outfits: z.array(z.object({
     id: z.string(),
     name: z.string(),
@@ -205,6 +225,41 @@ export const CharacterProfileSchema = z.object({
   updatedAt: z.string(),
 });
 export type CharacterProfile = z.infer<typeof CharacterProfileSchema>;
+
+export const CHARACTER_VISUAL_STYLES_2A = [
+  'Manga',
+  'Korean Webtoon',
+  'Manhwa',
+  'Western Comic',
+  'Anime',
+  '3D Stylized',
+  'Photorealistic',
+  'Custom',
+] as const;
+
+export const SPECIES_CATEGORIES = [
+  {
+    category: 'Human',
+    items: ['Human', 'Modern Human', 'Historical Human'],
+  },
+  {
+    category: 'Fantasy / Isekai',
+    items: ['Elf', 'Dark Elf', 'Half-Elf', 'Dwarf', 'Goblin', 'Orc', 'Beastfolk', 'Fairy'],
+  },
+  {
+    category: 'Supernatural',
+    items: ['Vampire', 'Werewolf', 'Demon', 'Angel', 'Spirit', 'Undead'],
+  },
+  {
+    category: 'Other',
+    items: ['Slime', 'Dragonkin', 'Android', 'Robot', 'Alien', 'Custom Species'],
+  },
+] as const;
+
+export function isNonHumanSpecies(species?: string): boolean {
+  if (!species) return false;
+  return !['Human', 'Modern Human', 'Historical Human'].includes(species);
+}
 
 // ============================================================================
 // ZOD SCHEMAS — COMIC PANEL & STORY STRUCTURE (FORMAT B)
