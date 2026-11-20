@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -8,6 +8,8 @@ import {
   Cpu,
   ExternalLink,
   FolderKanban,
+  Globe2,
+  Play,
   Sparkles,
   Users,
   Wand2,
@@ -15,18 +17,64 @@ import {
 import { useComicForge } from '@/components/providers/comicforge-provider';
 import { Badge, Button, Card } from '@/components/ui/primitives';
 import { formatDateShort } from '@/lib/utils';
+import { getEffectiveSpecies } from '@/lib/ai/prompt-formatter';
+
+type ProjectFilterTab = 'all' | 'drafts' | 'completed' | 'exported';
 
 export default function DashboardPage() {
-  const { t, projects, characters, prompts, engineStatus, preferences, hydrated } =
-    useComicForge();
+  const {
+    t,
+    projects,
+    characters,
+    worlds,
+    prompts,
+    engineStatus,
+    preferences,
+    hydrated,
+  } = useComicForge();
 
-  const activeProjects = projects.filter((p) => p.status !== 'archived').slice(0, 4);
-  const activeCharacters = characters.filter((c) => c.status !== 'archived').slice(0, 4);
-  const recentPrompts = prompts.slice(0, 4);
+  const isMs = preferences.uiLanguage === 'ms-MY';
+  const [projectTab, setProjectTab] = useState<ProjectFilterTab>('all');
+
+  const nonArchivedProjects = useMemo(
+    () => projects.filter((p) => p.status !== 'archived'),
+    [projects]
+  );
+
+  const latestProject = nonArchivedProjects[0] ?? null;
+
+  const draftProjects = useMemo(
+    () => nonArchivedProjects.filter((p) => p.status === 'draft' || p.status === 'in_progress'),
+    [nonArchivedProjects]
+  );
+
+  const completedProjects = useMemo(
+    () => nonArchivedProjects.filter((p) => p.status === 'completed'),
+    [nonArchivedProjects]
+  );
+
+  const exportedProjects = useMemo(
+    () => nonArchivedProjects.filter((p) => p.exportStatus === 'exported'),
+    [nonArchivedProjects]
+  );
+
+  const visibleProjects = useMemo(() => {
+    if (projectTab === 'drafts') return draftProjects.slice(0, 6);
+    if (projectTab === 'completed') return completedProjects.slice(0, 6);
+    if (projectTab === 'exported') return exportedProjects.slice(0, 6);
+    return nonArchivedProjects.slice(0, 6);
+  }, [projectTab, nonArchivedProjects, draftProjects, completedProjects, exportedProjects]);
+
+  const activeCharacters = useMemo(
+    () => characters.filter((c) => c.status !== 'archived').slice(0, 4),
+    [characters]
+  );
+  const recentUniverses = useMemo(() => worlds.slice(0, 4), [worlds]);
+  const recentPrompts = useMemo(() => prompts.slice(0, 4), [prompts]);
 
   return (
     <div className="space-y-8">
-      {/* Hero / Welcome */}
+      {/* Hero / Comic Creator Home Header */}
       <section className="glass-card halftone-bg rounded-3xl p-6 sm:p-8 relative overflow-hidden">
         <div className="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#6366F1]/25 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#00D9FF]/20 blur-3xl pointer-events-none" />
@@ -34,11 +82,11 @@ export default function DashboardPage() {
           <div className="space-y-3 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-block -skew-x-6 bg-[#FACC15] text-[#090D1A] px-3 py-0.5 text-xs font-black uppercase tracking-wider border-2 border-[#090D1A]">
-                ISSUE #01 · V1.0
+                PHASE 2B · COMIC STUDIO
               </span>
               <Badge variant="cyan">AFFIE TECH ComicForge AI</Badge>
               <Badge variant="indigo">
-                {preferences.uiLanguage === 'ms-MY' ? 'Bahasa Melayu Malaysia' : 'English'}
+                {isMs ? 'Bahasa Melayu Malaysia' : 'English'}
               </Badge>
             </div>
             <h1 className="text-2xl sm:text-4xl font-black tracking-tight uppercase">
@@ -51,15 +99,24 @@ export default function DashboardPage() {
               <Link href="/creator">
                 <Button size="lg">
                   <Sparkles className="w-4 h-4" />
-                  {t.actions.createComic}
+                  {isMs ? 'Cipta Komik Baharu' : 'Create New Comic'}
                 </Button>
               </Link>
-              <Link href="/characters">
-                <Button variant="secondary" size="lg">
-                  <Users className="w-4 h-4 text-[#00D9FF]" />
-                  {t.actions.createCharacter}
-                </Button>
-              </Link>
+              {latestProject ? (
+                <Link href={`/creator?projectId=${encodeURIComponent(latestProject.id)}`}>
+                  <Button variant="secondary" size="lg">
+                    <Play className="w-4 h-4 text-[#FACC15]" />
+                    {isMs ? 'Sambung Projek' : 'Continue Project'}
+                  </Button>
+                </Link>
+              ) : (
+                <Link href="/characters">
+                  <Button variant="secondary" size="lg">
+                    <Users className="w-4 h-4 text-[#00D9FF]" />
+                    {t.actions.createCharacter}
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
 
@@ -102,15 +159,153 @@ export default function DashboardPage() {
         </div>
       </section>
 
+      {/* My Comic Projects + Filter Tabs (Draft Pages, Completed, Exported) */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <FolderKanban className="w-5 h-5 text-[#6366F1]" />
+            <h2 className="text-lg font-extrabold tracking-tight">
+              {isMs ? 'Projek Komik Saya' : 'My Comic Projects'}
+            </h2>
+            <Badge variant="indigo">{nonArchivedProjects.length}</Badge>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              [
+                ['all', isMs ? 'Semua Projek' : 'My Comic Projects', nonArchivedProjects.length],
+                ['drafts', isMs ? 'Halaman Draf' : 'Draft Pages', draftProjects.length],
+                ['completed', isMs ? 'Komik Siap' : 'Completed Comics', completedProjects.length],
+                ['exported', isMs ? 'Komik Dieksport' : 'Exported Comics', exportedProjects.length],
+              ] as const
+            ).map(([tabKey, tabLabel, count]) => (
+              <button
+                key={tabKey}
+                type="button"
+                onClick={() => setProjectTab(tabKey)}
+                className={`min-h-[40px] px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                  projectTab === tabKey
+                    ? 'border-[#FACC15] bg-[#6366F1]/25 text-[#FACC15]'
+                    : 'border-[var(--cf-border)] bg-[var(--cf-surface)] text-[var(--cf-muted)] hover:text-[var(--cf-text)]'
+                }`}
+              >
+                {tabLabel} ({count})
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {!hydrated ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="h-44 rounded-2xl bg-[var(--cf-surface-2)] animate-pulse" />
+            <div className="h-44 rounded-2xl bg-[var(--cf-surface-2)] animate-pulse" />
+          </div>
+        ) : visibleProjects.length === 0 ? (
+          <Card className="p-8 text-center space-y-3">
+            <p className="text-sm text-[var(--cf-muted)]">
+              {projectTab === 'all'
+                ? t.dashboard.emptyProjects
+                : isMs
+                  ? 'Tiada projek dalam kategori ini lagi.'
+                  : 'No projects in this category yet.'}
+            </p>
+            <Link href="/creator">
+              <Button size="sm">
+                <Sparkles className="w-3.5 h-3.5" />
+                {isMs ? 'Cipta Komik Baharu' : 'Create New Comic'}
+              </Button>
+            </Link>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {visibleProjects.map((p) => {
+              const plannedPages = p.totalPages ?? p.episodeCount * p.scenesPerEpisode;
+              const currentEp = p.currentEpisode ?? 1;
+              return (
+                <Card key={p.id} className="comic-hover flex flex-col justify-between space-y-3">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      {p.coverThumbnailUrl ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element -- user-uploaded cover data/storage URL */}
+                          <img
+                            src={p.coverThumbnailUrl}
+                            alt={p.title}
+                            loading="lazy"
+                            className="w-16 h-20 rounded-xl object-cover border border-[var(--cf-border)] shrink-0"
+                          />
+                        </>
+                      ) : (
+                        <div className="w-16 h-20 rounded-xl bg-gradient-to-br from-[#6366F1]/25 to-[#00D9FF]/15 border border-[var(--cf-border)] flex flex-col items-center justify-center text-center p-1 shrink-0">
+                          <span className="text-[10px] font-black uppercase text-[#00D9FF] leading-tight">
+                            {p.genre.slice(0, 8)}
+                          </span>
+                          <span className="text-[9px] text-[var(--cf-muted)] mt-0.5">
+                            {p.aspectRatio}
+                          </span>
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1 space-y-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <h3 className="font-bold text-base truncate">{p.title}</h3>
+                          <Badge
+                            variant={
+                              p.status === 'completed'
+                                ? 'success'
+                                : p.status === 'in_progress'
+                                  ? 'cyan'
+                                  : 'yellow'
+                            }
+                          >
+                            {p.status}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-[var(--cf-muted)] truncate">
+                          {p.genre} · {p.artStyle}
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-[11px] text-[var(--cf-muted)]">
+                          <span>
+                            Ep {currentEp}/{p.episodeCount}
+                          </span>
+                          <span>·</span>
+                          <span>{plannedPages} pages</span>
+                          {p.exportStatus === 'exported' && (
+                            <>
+                              <span>·</span>
+                              <span className="text-emerald-400 font-semibold">Exported</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t border-[var(--cf-border)]">
+                    <span className="text-[11px] text-[var(--cf-muted)]">
+                      {formatDateShort(p.updatedAt, preferences.uiLanguage)}
+                    </span>
+                    <Link href={`/creator?projectId=${encodeURIComponent(p.id)}`}>
+                      <Button size="sm" variant="secondary">
+                        <Play className="w-3.5 h-3.5 text-[#FACC15]" />
+                        {isMs ? 'Sambung Projek' : 'Continue Project'}
+                      </Button>
+                    </Link>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </section>
+
       {/* Lightweight Comic Showcase Marquee (Read-only inspiration, does not alter user projects) */}
       <section className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <span className="inline-block -skew-x-6 bg-[#00D9FF] text-[#090D1A] px-2.5 py-0.5 text-[11px] font-black uppercase border-2 border-[#090D1A]">
-              {preferences.uiLanguage === 'ms-MY' ? 'GALERI INSPIRASI' : 'SHOWCASE'}
+              {isMs ? 'GALERI INSPIRASI' : 'SHOWCASE'}
             </span>
             <span className="text-xs text-[var(--cf-muted)]">
-              {preferences.uiLanguage === 'ms-MY'
+              {isMs
                 ? 'Contoh komik ringan (hover untuk berhenti seketika)'
                 : 'Sample comic panels (hover to pause)'}
             </span>
@@ -153,53 +348,14 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* Stats + Quick Lists */}
+      {/* Recent Characters, Recent Story Universes & Recent Prompts */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        {/* Recent Projects */}
-        <Card className="flex flex-col justify-between space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-bold text-base flex items-center gap-2">
-              <FolderKanban className="w-4 h-4 text-[#6366F1]" />
-              {t.dashboard.recentProjects}
-            </h2>
-            <Link href="/projects" className="text-xs text-[#00D9FF] hover:underline flex items-center gap-1">
-              All <ArrowRight className="w-3 h-3" />
-            </Link>
-          </div>
-          {!hydrated ? (
-            <div className="h-24 rounded-xl bg-[var(--cf-surface-2)] animate-pulse" />
-          ) : activeProjects.length === 0 ? (
-            <p className="text-xs text-[var(--cf-muted)] py-4">{t.dashboard.emptyProjects}</p>
-          ) : (
-            <ul className="space-y-2">
-              {activeProjects.map((p) => (
-                <li
-                  key={p.id}
-                  className="rounded-xl bg-[var(--cf-surface-2)] p-3 border border-[var(--cf-border)] flex items-center justify-between gap-2"
-                >
-                  <div className="min-w-0">
-                    <div className="font-semibold text-sm truncate">{p.title}</div>
-                    <div className="text-[11px] text-[var(--cf-muted)] truncate">
-                      {p.genre} · {p.artStyle}
-                    </div>
-                  </div>
-                  <Link href={`/creator?projectId=${encodeURIComponent(p.id)}`}>
-                    <Button size="sm" variant="outline">
-                      {t.actions.edit}
-                    </Button>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-
-        {/* Saved Characters */}
+        {/* Recent Characters */}
         <Card className="flex flex-col justify-between space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-base flex items-center gap-2">
               <Users className="w-4 h-4 text-[#00D9FF]" />
-              {t.dashboard.savedCharacters}
+              {isMs ? 'Watak Terkini' : 'Recent Characters'}
             </h2>
             <Link href="/characters" className="text-xs text-[#00D9FF] hover:underline flex items-center gap-1">
               All <ArrowRight className="w-3 h-3" />
@@ -219,13 +375,61 @@ export default function DashboardPage() {
                   <div className="min-w-0">
                     <div className="font-semibold text-sm truncate">
                       {c.name}{' '}
-                      <span className="text-[11px] text-[#00D9FF]">({c.characterCode})</span>
+                      <span className="font-mono text-[11px] text-[#00D9FF]">({c.characterCode})</span>
                     </div>
                     <div className="text-[11px] text-[var(--cf-muted)] truncate">
-                      {c.role} · {c.visualStyle}
+                      {getEffectiveSpecies(c)} · {c.role} · {c.visualStyle}
                     </div>
                   </div>
                   <Badge variant="indigo">v{c.version}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+
+        {/* Recent Story Universes */}
+        <Card className="flex flex-col justify-between space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-base flex items-center gap-2">
+              <Globe2 className="w-4 h-4 text-[#6366F1]" />
+              {isMs ? 'Story Universe Terkini' : 'Recent Story Universes'}
+            </h2>
+            <Link href="/story-universe" className="text-xs text-[#00D9FF] hover:underline flex items-center gap-1">
+              All <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+          {!hydrated ? (
+            <div className="h-24 rounded-xl bg-[var(--cf-surface-2)] animate-pulse" />
+          ) : recentUniverses.length === 0 ? (
+            <div className="py-4 space-y-2">
+              <p className="text-xs text-[var(--cf-muted)]">
+                {isMs
+                  ? 'Belum ada Story Universe. Bina peraturan dunia & lokasi di Story Universe Studio.'
+                  : 'No Story Universes yet. Build world rules & locations in Story Universe Studio.'}
+              </p>
+              <Link href="/story-universe" className="inline-block text-xs font-semibold text-[#00D9FF] hover:underline">
+                {isMs ? 'Buka Story Universe Studio →' : 'Open Story Universe Studio →'}
+              </Link>
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {recentUniverses.map((w) => (
+                <li
+                  key={w.id}
+                  className="rounded-xl bg-[var(--cf-surface-2)] p-3 border border-[var(--cf-border)] flex items-center justify-between gap-2"
+                >
+                  <div className="min-w-0">
+                    <div className="font-semibold text-sm truncate">{w.worldName}</div>
+                    <div className="text-[11px] text-[var(--cf-muted)] truncate">
+                      {w.universePreset} · {w.worldRules.length} rules · {w.locations.length} locations
+                    </div>
+                  </div>
+                  <Link href="/story-universe">
+                    <Button size="sm" variant="outline">
+                      {t.actions.edit}
+                    </Button>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -289,7 +493,7 @@ export default function DashboardPage() {
               href="https://chatgpt.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] text-xs font-semibold hover:border-[#00D9FF]/60"
+              className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] text-xs font-semibold hover:border-[#00D9FF]/60"
             >
               {t.actions.openChatGPT}
               <ExternalLink className="w-3.5 h-3.5 text-[#00D9FF]" />
@@ -298,7 +502,7 @@ export default function DashboardPage() {
               href="https://gemini.google.com/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] text-xs font-semibold hover:border-[#00D9FF]/60"
+              className="inline-flex items-center gap-1.5 min-h-[40px] px-3.5 rounded-xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)] text-xs font-semibold hover:border-[#00D9FF]/60"
             >
               {t.actions.openGemini}
               <ExternalLink className="w-3.5 h-3.5 text-[#6366F1]" />

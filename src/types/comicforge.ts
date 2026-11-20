@@ -378,6 +378,13 @@ export const ComicProjectSchema = z.object({
   dialogueStyle: z.string().optional(),
   regionalDialect: z.string().optional(),
   culturalContext: z.string().optional(),
+  // Phase 2B-1 Optional Project Metadata (backward-compatible)
+  coverThumbnailUrl: z.string().optional(),
+  currentEpisode: z.number().int().min(1).optional(),
+  totalPages: z.number().int().min(0).optional(),
+  exportStatus: z.enum(['not_exported', 'exported']).optional(),
+  characterRoles: z.record(z.string(), z.string()).optional(),
+  props: z.array(z.string()).optional(),
   storyOutline: StoryOutlineSchema.optional(),
   status: z.enum(['draft', 'in_progress', 'completed', 'archived']).default('draft'),
   lastEngineUsed: z.enum(ENGINE_IDS).optional(),

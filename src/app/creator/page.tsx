@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Suspense, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
   AlertTriangle,
@@ -9,9 +10,12 @@ import {
   Copy,
   Download,
   ExternalLink,
+  Globe2,
+  Plus,
   RefreshCw,
   Save,
   Sparkles,
+  Users,
   Wand2,
 } from 'lucide-react';
 import { useComicForge } from '@/components/providers/comicforge-provider';
@@ -35,6 +39,7 @@ import {
   STORY_LANGUAGES,
   STORY_TONES,
   TARGET_AUDIENCES,
+  UNIVERSE_PRESETS,
   type ArtStyleId,
   type ComicProject,
   type EngineId,
@@ -44,6 +49,7 @@ import {
   type StructuredPanel,
 } from '@/types/comicforge';
 import { ART_STYLES } from '@/lib/styles/art-styles';
+import { getEffectiveSpecies } from '@/lib/ai/prompt-formatter';
 import { generateId } from '@/lib/utils';
 
 function createInitialProject(
@@ -72,6 +78,8 @@ function createInitialProject(
     dialogueLength: 'medium',
     pacing: 'balanced',
     assignedCharacterIds: [],
+    characterRoles: {},
+    props: [],
     status: 'draft',
     createdAt: now,
     updatedAt: now,
@@ -89,6 +97,7 @@ function ComicCreatorInner() {
     worlds,
     preferences,
     saveProject,
+    saveWorld,
     savePrompt,
     notify,
   } = useComicForge();
@@ -108,6 +117,11 @@ function ComicCreatorInner() {
   const [engineError, setEngineError] = useState<string | null>(null);
   const [fallbackNotice, setFallbackNotice] = useState<string | null>(null);
   const [panelViewMode, setPanelViewMode] = useState<'human' | 'json'>('human');
+  const [showQuickUniverse, setShowQuickUniverse] = useState(false);
+  const [quickWorldName, setQuickWorldName] = useState('');
+  const [quickWorldPreset, setQuickWorldPreset] = useState<string>('Modern Fantasy');
+  const [quickWorldRule, setQuickWorldRule] = useState('');
+  const [propDraft, setPropDraft] = useState('');
 
   useEffect(() => {
     if (!projectIdParam) return;
@@ -463,11 +477,116 @@ function ComicCreatorInner() {
               />
             </div>
 
-            {/* Story Universe Studio & Malaysian Comic Mode (V2.0) */}
-            <div className="md:col-span-2 rounded-2xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)]/70 p-4 space-y-3">
-              <div className="text-xs font-black uppercase tracking-wider text-[#00D9FF]">
-                V2.0 Story Universe Studio &amp; Malaysian Comic Mode (Optional)
+            {/* Story Universe Studio & Malaysian Comic Mode (V2.0 / Phase 2B-1) */}
+            <div className="md:col-span-2 rounded-2xl border border-[var(--cf-border)] bg-[var(--cf-surface-2)]/70 p-4 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="text-xs font-black uppercase tracking-wider text-[#00D9FF] flex items-center gap-1.5">
+                  <Globe2 className="w-4 h-4" />
+                  Story Universe Studio &amp; Malaysian Comic Mode
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowQuickUniverse((v) => !v)}
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    {showQuickUniverse ? 'Tutup' : 'Cipta Story Universe'}
+                  </Button>
+                  <Link
+                    href="/story-universe"
+                    className="inline-flex items-center min-h-[40px] sm:min-h-[34px] px-3 rounded-lg border border-[var(--cf-border)] text-xs font-semibold text-[#00D9FF] hover:border-[#00D9FF]"
+                  >
+                    Story Universe Studio →
+                  </Link>
+                </div>
               </div>
+
+              {showQuickUniverse && (
+                <div className="rounded-xl border border-[#00D9FF]/40 bg-[var(--cf-surface)] p-3.5 space-y-3">
+                  <div className="text-xs font-bold text-[#FACC15]">
+                    Quick Create Story Universe
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <Label htmlFor="quick-world-name">Universe Name *</Label>
+                      <Input
+                        id="quick-world-name"
+                        value={quickWorldName}
+                        onChange={(e) => setQuickWorldName(e.target.value)}
+                        placeholder="e.g. Nusantara Aether"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="quick-world-preset">Preset</Label>
+                      <Select
+                        id="quick-world-preset"
+                        value={quickWorldPreset}
+                        onChange={(e) => setQuickWorldPreset(e.target.value)}
+                      >
+                        {UNIVERSE_PRESETS.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="quick-world-rule">First World Rule</Label>
+                      <Input
+                        id="quick-world-rule"
+                        value={quickWorldRule}
+                        onChange={(e) => setQuickWorldRule(e.target.value)}
+                        placeholder="e.g. Magic requires mana"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => {
+                      if (!quickWorldName.trim()) {
+                        notify('Sila masukkan nama Story Universe.', 'error');
+                        return;
+                      }
+                      const now = new Date().toISOString();
+                      const newWorld = {
+                        id: generateId('world'),
+                        worldName: quickWorldName.trim(),
+                        universePreset: quickWorldPreset,
+                        worldDescription: `Created in Comic Creator for ${project.title || 'new comic'}.`,
+                        genre: project.genre,
+                        historicalPeriod: 'Contemporary',
+                        technologyLevel: 'Modern',
+                        geography: '',
+                        climate: 'Tropical',
+                        culture: '',
+                        society: '',
+                        politicalStructure: '',
+                        magicSystem: '',
+                        powerSystem: '',
+                        customSpeciesNote: '',
+                        worldRules: quickWorldRule.trim() ? [quickWorldRule.trim()] : [],
+                        locations: [],
+                        factions: [],
+                        timeline: [],
+                        createdAt: now,
+                        updatedAt: now,
+                      };
+                      saveWorld(newWorld);
+                      setProject((prev) => ({ ...prev, worldId: newWorld.id }));
+                      setQuickWorldName('');
+                      setQuickWorldRule('');
+                      setShowQuickUniverse(false);
+                      notify(`Story Universe "${newWorld.worldName}" dicipta & dipautkan!`, 'success');
+                    }}
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Save &amp; Link Universe
+                  </Button>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <div>
                   <Label>Story Universe</Label>
@@ -523,32 +642,116 @@ function ComicCreatorInner() {
                   </Select>
                 </div>
               </div>
+
+              {/* Recurring Objects / Props */}
+              <div className="space-y-2 pt-1 border-t border-[var(--cf-border)]">
+                <Label htmlFor="prop-draft" className="mb-0">
+                  Recurring Objects / Props (Optional)
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="prop-draft"
+                    value={propDraft}
+                    onChange={(e) => setPropDraft(e.target.value)}
+                    placeholder="e.g. Glowing Blue Wristwatch, Ancient Keris"
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => {
+                      if (!propDraft.trim()) return;
+                      setProject((prev) => ({
+                        ...prev,
+                        props: [...(prev.props ?? []), propDraft.trim()],
+                      }));
+                      setPropDraft('');
+                    }}
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Prop
+                  </Button>
+                </div>
+                {(project.props?.length ?? 0) > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {project.props?.map((prop, idx) => (
+                      <Badge key={`${prop}-${idx}`} variant="cyan">
+                        {prop}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Assign Characters */}
-            <div className="md:col-span-2 space-y-2">
-              <Label>Assign Characters from Character Studio</Label>
+            {/* Character Cast (Connected to Character Studio 2.0) */}
+            <div className="md:col-span-2 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <Label className="mb-0 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-[#00D9FF]" />
+                  Character Cast (Character Studio 2.0)
+                </Label>
+                <Link
+                  href="/characters"
+                  className="text-xs font-semibold text-[#00D9FF] hover:underline"
+                >
+                  + Create / Manage in Character Studio →
+                </Link>
+              </div>
               {activeCharacters.length === 0 ? (
                 <p className="text-xs text-[var(--cf-muted)]">
                   Tiada watak tersimpan lagi. Engine akan menggunakan watak lalai atau anda boleh cipta watak di Studio Watak terlebih dahulu.
                 </p>
               ) : (
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {activeCharacters.map((c) => {
                     const selected = project.assignedCharacterIds.includes(c.id);
+                    const effSpecies = getEffectiveSpecies(c);
                     return (
-                      <button
+                      <div
                         key={c.id}
-                        type="button"
-                        onClick={() => toggleCharacter(c.id)}
-                        className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer min-h-[44px] ${
+                        className={`rounded-2xl border p-3 transition-all space-y-2 ${
                           selected
-                            ? 'cf-selected-ring bg-[#6366F1]/20 text-[var(--cf-text)]'
-                            : 'border-[var(--cf-border)] bg-[var(--cf-surface-2)] text-[var(--cf-muted)]'
+                            ? 'cf-selected-ring bg-[#6366F1]/18'
+                            : 'border-[var(--cf-border)] bg-[var(--cf-surface-2)]'
                         }`}
                       >
-                        {c.name} ({c.characterCode})
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleCharacter(c.id)}
+                          className="w-full flex items-center justify-between gap-2 text-left cursor-pointer min-h-[40px]"
+                        >
+                          <div className="min-w-0">
+                            <div className="font-bold text-xs sm:text-sm truncate">
+                              {c.name}{' '}
+                              <span className="font-mono text-[11px] text-[#00D9FF]">
+                                ({c.characterCode})
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-[var(--cf-muted)] truncate">
+                              {effSpecies} · {c.role} · {c.primaryOutfit || 'No outfit set'}
+                            </div>
+                          </div>
+                          <Badge variant={selected ? 'yellow' : 'default'}>
+                            {selected ? 'Assigned' : 'Select'}
+                          </Badge>
+                        </button>
+                        {selected && (
+                          <Input
+                            value={project.characterRoles?.[c.id] ?? c.role}
+                            onChange={(e) =>
+                              setProject((prev) => ({
+                                ...prev,
+                                characterRoles: {
+                                  ...(prev.characterRoles ?? {}),
+                                  [c.id]: e.target.value,
+                                },
+                              }))
+                            }
+                            placeholder="Role in this comic (e.g. Lead, Rival)"
+                            aria-label={`Role for ${c.name} in this comic`}
+                          />
+                        )}
+                      </div>
                     );
                   })}
                 </div>
