@@ -12,6 +12,7 @@ import {
   FolderKanban,
   Globe2,
   Languages,
+  Layers,
   LayoutDashboard,
   Library,
   Menu,
@@ -71,6 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: '/workspace', label: t.nav.workspace, icon: Layers },
     { href: '/creator', label: t.nav.creator, icon: Sparkles },
     { href: '/characters', label: t.nav.characters, icon: Users },
     { href: '/story-bible', label: t.nav.storyBible, icon: Globe2 },

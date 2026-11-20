@@ -9,6 +9,7 @@ export interface Translations {
   };
   nav: {
     dashboard: string;
+    workspace: string;
     creator: string;
     characters: string;
     storyBible: string;
@@ -126,6 +127,7 @@ export const TRANSLATIONS: Record<UILanguage, Translations> = {
     },
     nav: {
       dashboard: 'Papan Pemuka',
+      workspace: 'Ruang Kerja Komik',
       creator: 'Cipta Komik',
       characters: 'Studio Watak',
       storyBible: 'Story Universe Studio',
@@ -255,6 +257,7 @@ export const TRANSLATIONS: Record<UILanguage, Translations> = {
     },
     nav: {
       dashboard: 'Dashboard',
+      workspace: 'Comic Workspace',
       creator: 'Comic Creator',
       characters: 'Character Studio',
       storyBible: 'Story Universe Studio',

@@ -332,10 +332,43 @@ export const ComicSceneSchema = z.object({
 });
 export type ComicScene = z.infer<typeof ComicSceneSchema>;
 
+export const PAGE_PLAN_STATUSES = [
+  'Not Started',
+  'Planned',
+  'Prompt Ready',
+  'Awaiting Artwork',
+  'In Progress',
+  'Completed',
+] as const;
+export type PagePlanStatus = (typeof PAGE_PLAN_STATUSES)[number];
+
+export const STORY_ARC_PRESETS = [
+  'Beginning / Setup',
+  'Development / Rising Action',
+  'Climax',
+  'Resolution',
+] as const;
+
+export const PlannedPageSchema = z.object({
+  id: z.string(),
+  pageNumber: z.number().int().min(1),
+  episodeNumber: z.number().int().min(1).default(1),
+  sceneId: z.string().optional(),
+  storyBeat: z.string().default(''),
+  sceneSummary: z.string().default(''),
+  charactersPresent: z.array(z.string()).default([]),
+  location: z.string().default(''),
+  panelCount: z.number().int().min(1).max(12).default(4),
+  status: z.enum(PAGE_PLAN_STATUSES).default('Planned'),
+  recap: z.string().default(''),
+});
+export type PlannedPage = z.infer<typeof PlannedPageSchema>;
+
 export const ComicEpisodeSchema = z.object({
   id: z.string(),
   episode_number: z.number().int().min(1),
   title: z.string(),
+  storyArc: z.string().optional(),
   synopsis: z.string(),
   cliffhanger: z.string().default(''),
   scenes: z.array(ComicSceneSchema),
@@ -385,6 +418,8 @@ export const ComicProjectSchema = z.object({
   exportStatus: z.enum(['not_exported', 'exported']).optional(),
   characterRoles: z.record(z.string(), z.string()).optional(),
   props: z.array(z.string()).optional(),
+  // Phase 2B-2 Optional Page Planning Metadata (backward-compatible)
+  plannedPages: z.array(PlannedPageSchema).optional(),
   storyOutline: StoryOutlineSchema.optional(),
   status: z.enum(['draft', 'in_progress', 'completed', 'archived']).default('draft'),
   lastEngineUsed: z.enum(ENGINE_IDS).optional(),
